@@ -30,40 +30,40 @@ public class SaveManager {
     public void saveGame(GamePanel gp) {
         try {
             // --- Player ---
-            Player player = gp.em.getPlayer();
+            Player player = gp.getEntityManager().getPlayer();
             if (player == null) {
                 System.err.println("[SaveManager] Player not found!");
                 return;
             }
             PlayerData playerData = new PlayerData(
-                    player.worldX,
-                    player.worldY,
+                    player.getWorldX(),
+                    player.getWorldY(),
                     player.getHP(),
                     player.getMaxHP(),
-                    (player.getCurrentWeapon() != null ? player.getCurrentWeapon().name : null),
-                    gp.currentMap,
+                    player.equippedWeaponName(),
+                    gp.getCurrentMap(),
                     player.getExp(),
                     player.getLevel()
             );
             // --- Monsters ---
             List<ObjectData> monsterList = new ArrayList<>();
-            EntityManager em = gp.em;
+            EntityManager em = gp.getEntityManager();
 
-            if (em.getMonsters(gp.currentMap) != null) {
-                for (var entity : em.getMonsters(gp.currentMap)) {
+            if (em.getMonsters(gp.getCurrentMap()) != null) {
+                for (var entity : em.getMonsters(gp.getCurrentMap())) {
                     if (entity instanceof Monster mon) {
                         monsterList.add(new ObjectData(
-                                mon.name,
-                                mon.worldX,
-                                mon.worldY,
+                                mon.getName(),
+                                mon.getWorldX(),
+                                mon.getWorldY(),
                                 !mon.isDead() // active = còn sống
                         ));
                     }
                 }
             }
             // --- Map ---
-            int mapIndex = gp.currentMap;
-            String mapPath = gp.chunkM.pathMap;
+            int mapIndex = gp.getCurrentMap();
+            String mapPath = gp.getChunkManager().getMapPath();
 
             GameData data = new GameData(playerData, monsterList, mapIndex, mapPath);
             // --- Write JSON ---
@@ -94,75 +94,67 @@ public class SaveManager {
                 return;
             }
             // --- Restore Player ---
-            Player player = gp.em.getPlayer();
-            if (player != null && data.player != null) {
+            Player player = gp.getEntityManager().getPlayer();
+            PlayerData savedPlayer = data.getPlayer();
+            if (player != null && savedPlayer != null) {
                 // vị trí
-                player.worldX = data.player.worldX;
-                player.worldY = data.player.worldY;
+                player.restorePosition(savedPlayer.getWorldX(), savedPlayer.getWorldY());
 
-                // exp & level
-                player.setExp(data.player.exp);
-                player.setLevel(data.player.level);
+                player.setExp(savedPlayer.getExp());
+                player.setLevel(savedPlayer.getLevel());
 
                 // chỉ số + HP
-                player.setStats(data.player.maxHealth, player.getATK(), player.getDEF());
-                player.setHP(data.player.health);
+                player.setStats(savedPlayer.getMaxHealth(), player.getATK(), player.getDEF());
+                player.restoreHP(savedPlayer.getHealth());
 
                 // --- vũ khí ---
-                if (data.player.weaponName != null) {
+                if (savedPlayer.getWeaponName() != null) {
                     object_data.weapons.Weapon w = null;
 
-                    switch (data.player.weaponName) {
+                    switch (savedPlayer.getWeaponName()) {
                         case "Leviathan Axe" ->
-                                w = new object_data.weapons.Axe(gp, data.mapIndex);
-                        case "Argonaut Hero's Sword" ->
-                                w = new object_data.weapons.Sword(gp, data.mapIndex);
-                        case "Steve Pick" ->
-                                w = new object_data.weapons.Pick(gp, data.mapIndex);
+                                w = new object_data.weapons.Axe(gp, data.getMapIndex());
+                        case "Argonaut hero's sword", "Argonaut Hero's Sword" ->
+                                w = new object_data.weapons.Sword(gp, data.getMapIndex());
+                        case "Steve's pick", "Steve Pick" ->
+                                w = new object_data.weapons.Pick(gp, data.getMapIndex());
                     }
 
                     if (w != null) {
-                        player.setCurrentWeapon(w);
                         player.equipWeapon(w);
                     }
                 }
-                // --- Map ---
-                gp.currentMap = data.player.mapIndex;
-                player.mapIndex = gp.currentMap;
+                gp.setCurrentMap(savedPlayer.getMapIndex());
+                player.setMapIndex(gp.getCurrentMap());
 
-                String newMap = "map" + gp.currentMap;
-                gp.chunkM.loadMap(newMap);
+                String newMap = "map" + gp.getCurrentMap();
+                gp.getChunkManager().loadMap(newMap);
 
-                if (gp.om != null)
-                    gp.om.reloadMapObjects(gp.currentMap);
+                if (gp.getObjectManager() != null)
+                    gp.getObjectManager().reloadMapObjects(gp.getCurrentMap());
 
-                gp.em.update(gp.currentMap);
+                gp.getEntityManager().update(gp.getCurrentMap());
             }
             // --- Restore Monsters ---
-            var monsters = gp.em.getMonsters(gp.currentMap);
-            if (monsters != null && data.objects != null) {
-                for (int i = 0; i < Math.min(monsters.size(), data.objects.size()); i++) {
+            var monsters = gp.getEntityManager().getMonsters(gp.getCurrentMap());
+            if (monsters != null && data.getObjects() != null) {
+                for (int i = 0; i < Math.min(monsters.size(), data.getObjects().size()); i++) {
                     var entity = monsters.get(i);
-                    var saved = data.objects.get(i);
+                    var saved = data.getObjects().get(i);
 
                     if (entity instanceof Monster mon) {
-                        mon.worldX = saved.worldX;
-                        mon.worldY = saved.worldY;
+                        mon.restorePosition(saved.getWorldX(), saved.getWorldY());
 
-                        if (!saved.active)
-                            mon.setHP(0);
+                        if (!saved.isActive())
+                            mon.kill();
                         else
                             mon.revive();
                     }
                 }
             }
             // Khởi tạo lại Interact
-            if (gp.em != null && gp.em.getPlayer() != null) {
-                gp.iR = new interact_manager.Interact(
-                        gp,
-                        gp.em.getPlayer(),
-                        gp.em.getPlayer().input
-                );
+            if (gp.getEntityManager() != null && gp.getEntityManager().getPlayer() != null) {
+                gp.resetInteractionRouter();
             }
             System.out.println("[SaveManager] Game loaded successfully.");
         } catch (IOException e) {

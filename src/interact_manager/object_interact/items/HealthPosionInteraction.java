@@ -17,8 +17,8 @@ public class HealthPosionInteraction implements IObjectInteraction {
 
     @Override
     public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.uiManager.get(MessageUI.class);
-        List<WorldObject> objects = gp.om.getObjects(gp.currentMap);
+        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
+        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
 
         if (msgUI != null) {
             msgUI.showTouchMessage("press 'F' to heal health", obj, gp);

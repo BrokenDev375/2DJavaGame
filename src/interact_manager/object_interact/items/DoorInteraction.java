@@ -16,39 +16,38 @@ public class DoorInteraction implements IObjectInteraction {
 
     @Override
     public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.uiManager.get(MessageUI.class);
-        FadeUI fadeUI = gp.uiManager.get(FadeUI.class);
+        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
+        FadeUI fadeUI = gp.getUiManager().get(FadeUI.class);
 
         if (msgUI != null) msgUI.showTouchMessage("press 'F' to shopping", obj, gp);
         if (input.isPicked()) {
             if (fadeUI != null) fadeUI.startFade(() -> {
                 // Chuyển map
-                if ("map0".equals(gp.chunkM.pathMap)) {
-                    gp.chunkM.pathMap = "map3";
-                    gp.currentMap = 3;
-                } else if ("map3".equals(gp.chunkM.pathMap)) {
-                    gp.chunkM.pathMap = "map0";
-                    gp.currentMap = 0;
+                if ("map0".equals(gp.getChunkManager().getMapPath())) {
+                    gp.getChunkManager().loadMap("map3");
+                    gp.setCurrentMap(3);
+                } else if ("map3".equals(gp.getChunkManager().getMapPath())) {
+                    gp.getChunkManager().loadMap("map0");
+                    gp.setCurrentMap(0);
                 }
 
                 // Tìm cửa ở map đích
-                var destList = gp.om.getObjects(gp.currentMap);
+                var destList = gp.getObjectManager().getObjects(gp.getCurrentMap());
                 WorldObject dest = null;
                 for (var wo : destList) {
-                    if (wo != null && "door".equals(wo.name)) {
+                    if (wo != null && wo.isNamed("door")) {
                         dest = wo;
                         break;
                     }
                 }
 
                 if (dest != null) {
-                    gp.em.getPlayer().worldX = dest.worldX;
-                    gp.em.getPlayer().worldY = dest.worldY;
-                    gp.em.getPlayer().mapIndex = gp.currentMap;
+                    gp.getEntityManager().getPlayer().moveTo(dest.getWorldX(), dest.getWorldY());
+                    gp.getEntityManager().getPlayer().setMapIndex(gp.getCurrentMap());
                 }
 
-                gp.chunkM.clearChunks();
-                gp.chunkM.updateChunks(gp.em.getPlayer().worldX, gp.em.getPlayer().worldY);
+                gp.getChunkManager().clearChunks();
+                gp.getChunkManager().updateChunks(gp.getEntityManager().getPlayer().getWorldX(), gp.getEntityManager().getPlayer().getWorldY());
 
                 if (msgUI != null) msgUI.showTouchMessage("shop!", obj, gp);
             });

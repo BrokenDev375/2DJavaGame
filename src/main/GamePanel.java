@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package main;
 
 import javax.swing.JPanel;
@@ -12,6 +8,7 @@ import entity_manager.EntityManager;
 import entity_manager.ObjectManager;
 import tile.ChunkManager;
 import tile.TileManager;
+import input_manager.InputController;
 import input_manager.InputManager;
 import interact_manager.Interact;
 import ui.health.HealthUI;
@@ -41,33 +38,34 @@ public class GamePanel extends JPanel {
     public final int chunkSize = 32;
 
     // ===== SYSTEM =====
-    public TileManager tileM = new TileManager(this);
-    public ChunkManager chunkM = new ChunkManager(chunkSize, this);
+    private final TileManager tileM = new TileManager(this);
+    private final ChunkManager chunkM = new ChunkManager(chunkSize, this);
     private final InputManager input;
 
     // ===== SAVE  =====
-    public final SaveManager saveManager = new SaveManager();
+    private final SaveManager saveManager = new SaveManager();
 
     // ===== OTHERS =====
-    public CollisionChecker cChecker;
-    public UtilityTool uTool = new UtilityTool();
-    public int frameCounter = 0;
-    public Interact iR;
+    private final Camera camera = new Camera(this);
+    private CollisionChecker cChecker;
+    private final UtilityTool uTool = new UtilityTool();
+    private int frameCounter = 0;
+    private Interact iR;
     // ===== ENTITY MANAGER =====
-    public EntityManager em;
-    public final ObjectManager om = new ObjectManager(this);
+    private EntityManager em;
+    private final ObjectManager om = new ObjectManager(this);
 
     // ===== UI SYSTEM =====
-    public final UIManager uiManager = new UIManager();
+    private final UIManager uiManager = new UIManager();
     private PauseOverlay pauseOverlay;
     public static final float SCALE = 3f;
 
     // ===== MAP =====
-    public int numMaps = 3;
-    public int currentMap = 0;
+    private final int numMaps = 3;
+    private int currentMap = 0;
 
     // ===== GAME STATE =====
-    public final GameStateManager gsm = new GameStateManager();
+    private final GameStateManager gsm = new GameStateManager();
 
     // ===== THREAD =====
     Thread gameThread;
@@ -94,39 +92,116 @@ public class GamePanel extends JPanel {
 
         // Core managers
         em = new EntityManager(this, input.getKeyController());
-        cChecker = new CollisionChecker(this);
-        iR = new Interact(this, em.getPlayer(), input.getKeyController());
+        resetCollisionChecker();
+        resetInteractionRouter();
 
     }
 
 
     public void setupGame() {
         em.getPlayer().setDefaultValues();
-        chunkM.pathMap = "map3";
+        chunkM.loadMap("map3");
         gsm.setState(GameState.START);
     }
 
+    public InputController getInputController() {
+        return input.getKeyController();
+    }
+
+    public int getFrameCounter() {
+        return frameCounter;
+    }
+
+    public int getCurrentMap() {
+        return currentMap;
+    }
+
+    public int getNumMaps() {
+        return numMaps;
+    }
+
+    public GameState getGameState() {
+        return gsm.getState();
+    }
+
+    public void setGameState(GameState state) {
+        gsm.setState(state);
+    }
+
+    public void setCurrentMap(int mapIndex) {
+        currentMap = mapIndex;
+    }
+
+    public CollisionChecker getCollisionChecker() {
+        return cChecker;
+    }
+
+    public EntityManager getEntityManager() {
+        return em;
+    }
+
+    public UtilityTool getUtilityTool() {
+        return uTool;
+    }
+
+    public Camera getCamera() {
+        return camera;
+    }
+
+    public TileManager getTileManager() {
+        return tileM;
+    }
+
+    public ChunkManager getChunkManager() {
+        return chunkM;
+    }
+
+    public UIManager getUiManager() {
+        return uiManager;
+    }
+
+    public ObjectManager getObjectManager() {
+        return om;
+    }
+
+    public SaveManager getSaveManager() {
+        return saveManager;
+    }
+
+    private void resetCollisionChecker() {
+        cChecker = new CollisionChecker(this);
+    }
+
+    public void resetInteractionRouter() {
+        if (em != null && em.getPlayer() != null) {
+            iR = new Interact(this, em.getPlayer(), getInputController());
+        }
+    }
+
+    private void tickFrameCounter() {
+        frameCounter++;
+        if (frameCounter >= 1_000_000) {
+            frameCounter = 0;
+        }
+    }
+
     public void restartGame() {
-        currentMap = 3;
-        chunkM.pathMap = "map3";
+        setCurrentMap(3);
         chunkM.loadMap("map3");
         em.getPlayer().setDefaultValues();
-        em.getPlayer().setHP(em.getPlayer().getMaxHP());
-        em.getPlayer().mapIndex = currentMap;
+        em.getPlayer().refillHP();
+        em.getPlayer().setMapIndex(getCurrentMap());
         em.getPlayer().setLevel(1);
         em.getPlayer().setExp(0);
 
-        object_data.weapons.Weapon defaultWeapon = new object_data.weapons.Sword(this, currentMap);
-        em.getPlayer().setCurrentWeapon(defaultWeapon);
+        object_data.weapons.Weapon defaultWeapon = new object_data.weapons.Sword(this, getCurrentMap());
         em.getPlayer().equipWeapon(defaultWeapon);
         if (om != null) {
-            om.reloadMapObjects(currentMap);
+            om.reloadMapObjects(getCurrentMap());
         }
-        cChecker = new CollisionChecker(this);
-        if (em != null && em.getPlayer() != null) {
-            iR = new interact_manager.Interact(this, em.getPlayer(), em.getPlayer().input);
-        }
-        em.update(currentMap);
+        resetCollisionChecker();
+        resetInteractionRouter();
+        em.update(getCurrentMap());
         gsm.setState(GameState.PLAY);
     }
 
@@ -141,9 +216,9 @@ public class GamePanel extends JPanel {
             case START, GAME_OVER -> uiManager.update(gsm.getState());
 
             case PLAY -> {
-                chunkM.updateChunks(em.getPlayer().worldX, em.getPlayer().worldY);
-                currentMap = uTool.mapNameToIndex(chunkM.pathMap);
-                em.update(currentMap);
+                chunkM.updateChunks(em.getPlayer().getWorldX(), em.getPlayer().getWorldY());
+                setCurrentMap(uTool.mapNameToIndex(chunkM.getMapPath()));
+                em.update(getCurrentMap());
                 if (em.getPlayer() != null && em.getPlayer().isDead()) {
                     gsm.setState(GameState.GAME_OVER);
                     return;
@@ -170,12 +245,11 @@ public class GamePanel extends JPanel {
         if (gsm.getState() != GameState.START)
             tileM.draw(g2, chunkM);
 
-        om.draw(g2, currentMap , em.getPlayer());
-        em.draw(g2, currentMap);
+        om.draw(g2, getCurrentMap() , em.getPlayer());
+        em.draw(g2, getCurrentMap());
         uiManager.draw(g2, gsm.getState());
 
-        frameCounter++;
-        if (frameCounter >= 1_000_000) frameCounter = 0;
+        tickFrameCounter();
         g2.dispose();
     }
 }

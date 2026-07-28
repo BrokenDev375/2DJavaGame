@@ -16,7 +16,7 @@ public class ChunkManager {
     // Single-thread executor for background chunk loading
     private ExecutorService loader = Executors.newSingleThreadExecutor(); // private thread for load chunk
     // Current map path
-    public String pathMap = "map0"; 
+    private String pathMap = "map0";
 
     public ChunkManager(int chunkSize , GamePanel gp){
         this.chunkSize = chunkSize;
@@ -53,7 +53,7 @@ public class ChunkManager {
             for(int row=0; row<chunkSize; row++){
                 for(int col=0; col<chunkSize; col++){
                     int num = Integer.parseInt(numbers[idx].trim());
-                    c.mapTileNum[row][col] = (num == 0) ? 0 : num - 1; 
+                    c.setTileNum(row, col, (num == 0) ? 0 : num - 1);
                     idx++;
                 }
             }
@@ -83,8 +83,8 @@ public class ChunkManager {
     private void unloadFarChunks(int left, int right, int top, int bottom){
         synchronized (chunks) {
             chunks.entrySet().removeIf(e -> {
-                int cx = e.getValue().chunkX;
-                int cy = e.getValue().chunkY;
+                int cx = e.getValue().getChunkX();
+                int cy = e.getValue().getChunkY();
                 return cx < left - 1 || cx > right + 1 || cy < top - 1 || cy > bottom + 1;
             });
         }
@@ -93,10 +93,11 @@ public class ChunkManager {
     public void updateChunks(int playerWorldX, int playerWorldY){
         int buffer = gp.tileSize * (chunkSize / 2);
 
-        int screenLeft   = playerWorldX - gp.em.getPlayer().screenX - buffer;
-        int screenRight  = playerWorldX + gp.em.getPlayer().screenX + buffer;
-        int screenTop    = playerWorldY - gp.em.getPlayer().screenY - buffer;
-        int screenBottom = playerWorldY + gp.em.getPlayer().screenY + buffer;
+        var player = gp.getEntityManager().getPlayer();
+        int screenLeft   = gp.getCamera().visibleLeft(player, buffer);
+        int screenRight  = gp.getCamera().visibleRight(player, buffer);
+        int screenTop    = gp.getCamera().visibleTop(player, buffer);
+        int screenBottom = gp.getCamera().visibleBottom(player, buffer);
 
         int chunkLeft   = screenLeft / (chunkSize * gp.tileSize);
         int chunkRight  = screenRight / (chunkSize * gp.tileSize);
@@ -129,6 +130,10 @@ public class ChunkManager {
     public void loadMap(String mapName) {
         clearChunks();                // xoá toàn bộ chunk cũ
         this.pathMap = mapName;       // cập nhật đường dẫn map mới
+    }
+
+    public String getMapPath() {
+        return pathMap;
     }
     public void shutdown(){
         loader.shutdownNow();
@@ -180,7 +185,7 @@ public class ChunkManager {
             return 0;
         }
 
-        return c.mapTileNum[inChunkRow][inChunkCol];
+        return c.getTileNum(inChunkRow, inChunkCol);
     }
     // Lấy tile num theo toạ độ world (pixel)
     public int getTileNumAtWorld(int worldX, int worldY) {

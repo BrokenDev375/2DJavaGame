@@ -14,15 +14,15 @@ public class KeyInteraction implements IObjectInteraction {
 
     @Override
     public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.uiManager.get(MessageUI.class);
-        List<WorldObject> objects = gp.om.getObjects(gp.currentMap);
+        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
+        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
 
         boolean pressed = input.isPicked();
 
         // ==== 1) BẤM F → NHẶT KEY ====
         if (pressed) {
             SoundManager.getInstance().playSE(SoundManager.SoundID.COIN);
-            player.hasKey++;
+            player.collectKey();
             objects.remove(obj); // xoá key khỏi map
 
             if (msgUI != null) {

@@ -1,46 +1,138 @@
 package object_data;
 
 import main.GamePanel;
+import world.WorldBody;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 
-public class WorldObject {
+public class WorldObject implements WorldBody {
 
-    // World & screen
-    public int worldX, worldY;
-    public int width, height;
-    public final int screenX;
-    public final int screenY;
+    private int worldX, worldY;
+    private int width, height;
+    private BufferedImage staticImage;
+    private String name;
 
-    // Sprite/static image
-    public BufferedImage staticImage;
-    public String name;
+    private Rectangle solidArea;
+    private boolean collidable = false;
 
-    // Collision
-    public Rectangle solidArea;
-    public int solidAreaDefaultX, solidAreaDefaultY;
-    public boolean collision = false;
+    private int mapIndex = 0;
+    private int value = 0;
 
-    // Map
-    public int mapIndex = 0;
-
-    public int value = 0;
     protected final GamePanel gp;
 
     public WorldObject(GamePanel gp) {
         this.gp = gp;
-        this.screenX = gp.screenWidth/2 - (gp.tileSize/2);
-        this.screenY = gp.screenHeight/2 - (gp.tileSize/2);
     }
 
     public void update() {}
+
     public void draw(Graphics2D g2) {
-        if (staticImage != null) {
-            g2.drawImage(staticImage, screenX, screenY, null);
+        BufferedImage image = getRenderImage();
+        if (image != null && gp.getEntityManager() != null && gp.getEntityManager().getPlayer() != null) {
+            int screenX = gp.getCamera().screenX(this, gp.getEntityManager().getPlayer());
+            int screenY = gp.getCamera().screenY(this, gp.getEntityManager().getPlayer());
+            g2.drawImage(image, screenX, screenY, null);
         }
+    }
+
+    public void moveTo(int x, int y) {
+        this.worldX = x;
+        this.worldY = y;
+    }
+
+    public int getWorldX() {
+        return worldX;
+    }
+
+    public int getWorldY() {
+        return worldY;
+    }
+
+    public void setSize(int width, int height) {
+        this.width = Math.max(1, width);
+        this.height = Math.max(1, height);
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setStaticImage(BufferedImage image) {
+        this.staticImage = image;
+    }
+
+    public BufferedImage getStaticImage() {
+        return staticImage;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public boolean isNamed(String expectedName) {
+        return expectedName != null && expectedName.equals(name);
+    }
+
+    public void setSolidArea(Rectangle area) {
+        solidArea = area == null ? null : new Rectangle(area);
+    }
+
+    public Rectangle getSolidArea() {
+        if (solidArea == null) {
+            return new Rectangle(0, 0, Math.max(1, width), Math.max(1, height));
+        }
+        return new Rectangle(solidArea);
+    }
+
+    public Rectangle getSolidAreaWorld() {
+        Rectangle area = getSolidArea();
+        return new Rectangle(
+                worldX + area.x,
+                worldY + area.y,
+                area.width,
+                area.height
+        );
+    }
+
+    public void setCollidable(boolean collidable) {
+        this.collidable = collidable;
+    }
+
+    public boolean isCollidable() {
+        return collidable;
+    }
+
+    public void setMapIndex(int mapIndex) {
+        this.mapIndex = mapIndex;
+    }
+
+    public int getMapIndex() {
+        return mapIndex;
+    }
+
+    public boolean isOnMap(int mapIndex) {
+        return this.mapIndex == mapIndex;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
     }
 
     protected BufferedImage setup(String path, int w, int h) {
@@ -62,5 +154,4 @@ public class WorldObject {
     public BufferedImage getRenderImage() {
         return staticImage;
     }
-
 }

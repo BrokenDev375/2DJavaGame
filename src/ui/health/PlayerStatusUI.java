@@ -17,8 +17,8 @@ public class PlayerStatusUI extends BaseUI {
     public void update() {}
     @Override
     public void draw(Graphics2D g2) {
-        if (gp == null || gp.em == null) return;
-        Player p = gp.em.getPlayer();
+        if (gp == null || gp.getEntityManager() == null) return;
+        Player p = gp.getEntityManager().getPlayer();
         if (p == null) return;
 
         // Chỉ số người chơi

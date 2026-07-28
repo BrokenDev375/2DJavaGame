@@ -1,40 +1,50 @@
-// src/object_data/ObjectPortal.java
 package object_data;
 
 import main.GamePanel;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import object_data.WorldObject;
 
 public class ObjectPortal extends WorldObject {
 
-    // 2 frame animation
-    private BufferedImage f1, f2;
+    private BufferedImage firstFrame;
+    private BufferedImage secondFrame;
     private int animCounter = 0;
-    private int frameDuration = 10;
+    private final int frameDuration = 10;
 
-    public int targetMap;
-    public int targetWorldX;
-    public int targetWorldY;
+    private int targetMap;
+    private int targetWorldX;
+    private int targetWorldY;
 
     public ObjectPortal(GamePanel gp, int mapIndex) {
         super(gp);
-        this.mapIndex = mapIndex;
+        setMapIndex(mapIndex);
+        setName("portal");
+        setSize(gp.tileSize * 3 / 2, gp.tileSize * 3 / 2);
 
-        name   = "portal";
-        width  = gp.tileSize * 3/2;
-        height = gp.tileSize * 3/2;
+        firstFrame = setup("/object/portal1", getWidth(), getHeight());
+        secondFrame = setup("/object/portal2", getWidth(), getHeight());
 
-        f1 = setup("/object/portal1", width, height);
-        f2 = setup("/object/portal2", width, height);
+        setCollidable(false);
+        setSolidArea(new Rectangle(2, 2, getWidth() - 4, getHeight() - 4));
+    }
 
-        collision = false;
+    public void setTarget(int mapIndex, int worldX, int worldY) {
+        this.targetMap = mapIndex;
+        this.targetWorldX = worldX;
+        this.targetWorldY = worldY;
+    }
 
-        solidArea = new Rectangle(2, 2, width - 4, height - 4);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
+    public int getTargetMap() {
+        return targetMap;
+    }
 
+    public int getTargetWorldX() {
+        return targetWorldX;
+    }
+
+    public int getTargetWorldY() {
+        return targetWorldY;
     }
 
     @Override
@@ -45,7 +55,7 @@ public class ObjectPortal extends WorldObject {
     @Override
     public BufferedImage getRenderImage() {
         int idx = (animCounter / frameDuration) % 2;
-        if (idx == 0) return (f1 != null ? f1 : f2);
-        return (f2 != null ? f2 : f1);
+        if (idx == 0) return firstFrame != null ? firstFrame : secondFrame;
+        return secondFrame != null ? secondFrame : firstFrame;
     }
 }

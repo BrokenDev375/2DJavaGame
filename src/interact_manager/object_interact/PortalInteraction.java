@@ -15,36 +15,35 @@ public class PortalInteraction implements IObjectInteraction {
 
     @Override
     public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.uiManager.get(MessageUI.class);
-        FadeUI fadeUI = gp.uiManager.get(FadeUI.class);
+        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
+        FadeUI fadeUI = gp.getUiManager().get(FadeUI.class);
 
         if (msgUI != null) msgUI.showTouchMessage("press 'F' to tele", obj, gp);
         if (input.isPicked()) {
             if (fadeUI != null) fadeUI.startFade(() -> {
-                if ("map0".equals(gp.chunkM.pathMap)) {
-                    gp.chunkM.pathMap = "map1";
-                    gp.currentMap = 1;
-                } else if ("map1".equals(gp.chunkM.pathMap)) {
-                    gp.chunkM.pathMap = "map0";
-                    gp.currentMap = 0;
+                if ("map0".equals(gp.getChunkManager().getMapPath())) {
+                    gp.getChunkManager().loadMap("map1");
+                    gp.setCurrentMap(1);
+                } else if ("map1".equals(gp.getChunkManager().getMapPath())) {
+                    gp.getChunkManager().loadMap("map0");
+                    gp.setCurrentMap(0);
                 }
 
-                var destList = gp.om.getObjects(gp.currentMap);
+                var destList = gp.getObjectManager().getObjects(gp.getCurrentMap());
                 WorldObject dest = null;
                 for (var wo : destList) {
-                    if (wo != null && "portal".equals(wo.name)) {
+                    if (wo != null && wo.isNamed("portal")) {
                         dest = wo;
                         break;
                     }
                 }
                 if (dest != null) {
-                    gp.em.getPlayer().worldX = dest.worldX;
-                    gp.em.getPlayer().worldY = dest.worldY + gp.tileSize;
-                    gp.em.getPlayer().mapIndex = gp.currentMap;
+                    gp.getEntityManager().getPlayer().moveTo(dest.getWorldX(), dest.getWorldY() + gp.tileSize);
+                    gp.getEntityManager().getPlayer().setMapIndex(gp.getCurrentMap());
                 }
 
-                gp.chunkM.clearChunks();
-                gp.chunkM.updateChunks(gp.em.getPlayer().worldX, gp.em.getPlayer().worldY);
+                gp.getChunkManager().clearChunks();
+                gp.getChunkManager().updateChunks(gp.getEntityManager().getPlayer().getWorldX(), gp.getEntityManager().getPlayer().getWorldY());
 
                 if (msgUI != null) msgUI.showTouchMessage("Teleported!", obj, gp);
             });

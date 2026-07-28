@@ -32,12 +32,12 @@ public class EntityManager {
 
 
     public List<Entity> getMonsters() {
-        return mM.getMonsters(gp.currentMap);
+        return mM.getMonsters(gp.getCurrentMap());
     }
 
     public void update(int currentMap) {
         player.update();
-        mM.update(currentMap, player.worldX, player.worldY);
+        mM.update(currentMap, player.getWorldX(), player.getWorldY());
 
         List<Entity> monsters = mM.getMonsters(currentMap);
 
@@ -63,7 +63,7 @@ public class EntityManager {
         all.addAll(npcM.getNPCs(currentMap));
         all.add(player);
 
-        all.sort((a, b) -> Integer.compare(a.worldY, b.worldY));
+        all.sort((a, b) -> Integer.compare(a.getWorldY(), b.getWorldY()));
         for (Entity e : all) e.draw(g2);
     }
 }

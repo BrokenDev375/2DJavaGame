@@ -87,11 +87,11 @@ public class PauseOverlay extends BaseUI {
     }
     @Override
     public boolean shouldDraw() {
-        return gp.gsm.getState() == GameState.PAUSE;
+        return gp.getGameState() == GameState.PAUSE;
     }
     @Override
     public boolean shouldUpdate() {
-        return gp.gsm.getState() == GameState.PAUSE;
+        return gp.getGameState() == GameState.PAUSE;
     }
     // Bôi sáng nút đang được focus
     private void highlightFocusedButton(Graphics2D g2) {
@@ -136,7 +136,7 @@ public class PauseOverlay extends BaseUI {
 
     // Về Menu chính
     private void goMenu() {
-        gp.gsm.setState(GameState.START);
+        gp.setGameState(GameState.START);
     }
 
     // Restart game
@@ -149,7 +149,7 @@ public class PauseOverlay extends BaseUI {
 
     // Tiếp tục chơi
     private void resume() {
-        gp.gsm.setState(GameState.PLAY);
+        gp.setGameState(GameState.PLAY);
         if (!musicB.isMuted()) {
             SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
         }

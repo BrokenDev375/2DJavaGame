@@ -1,16 +1,19 @@
 package game_data;
 
-import java.util.List;
-
 public class PlayerData {
-    public int worldX;
-    public int worldY;
-    public int health;
-    public int maxHealth;
-    public String weaponName;
-    public int mapIndex;
-    public int exp ;
-    public int level ;
+    private int worldX;
+    private int worldY;
+    private int health;
+    private int maxHealth;
+    private String weaponName;
+    private int mapIndex;
+    private int exp;
+    private int level;
+
+    private PlayerData() {
+        // Used by Gson.
+    }
+
     public PlayerData(int worldX, int worldY, int health, int maxHealth,
                       String weaponName, int mapIndex, int exp , int level) {
         this.worldX = worldX;
@@ -21,5 +24,37 @@ public class PlayerData {
         this.mapIndex = mapIndex;
         this.exp = exp;
         this.level = level;
+    }
+
+    public int getWorldX() {
+        return worldX;
+    }
+
+    public int getWorldY() {
+        return worldY;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    public String getWeaponName() {
+        return weaponName;
+    }
+
+    public int getMapIndex() {
+        return mapIndex;
+    }
+
+    public int getExp() {
+        return exp;
+    }
+
+    public int getLevel() {
+        return level;
     }
 }

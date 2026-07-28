@@ -25,8 +25,8 @@ public class GameCommandHandler implements KeyListener {
         int code = e.getKeyCode();
 
         // ======= MAIN MENU (START STATE) ===========
-        if (gp.gsm.getState() == GameState.START) {
-            MainMenuUI menu = gp.uiManager.get(MainMenuUI.class);
+        if (gp.getGameState() == GameState.START) {
+            MainMenuUI menu = gp.getUiManager().get(MainMenuUI.class);
             if (menu == null) return;
             menu.handleKey(code);
 
@@ -51,23 +51,23 @@ public class GameCommandHandler implements KeyListener {
 
 
         // =========== PLAY STATE ====================
-        else if (gp.gsm.getState() == GameState.PLAY) {
+        else if (gp.getGameState() == GameState.PLAY) {
             // === DIALOGUE
-            DialogueUI dialogue = gp.uiManager.get(DialogueUI.class);
+            DialogueUI dialogue = gp.getUiManager().get(DialogueUI.class);
             if (dialogue != null && dialogue.isActive()) {
                 return;
             }
             // === SAVE GAME ===
             if (code == KeyEvent.VK_F5) {
-                gp.saveManager.saveGame(gp);
-                var msgUI = gp.uiManager.get(MessageUI.class);
+                gp.getSaveManager().saveGame(gp);
+                var msgUI = gp.getUiManager().get(MessageUI.class);
                 if (msgUI != null) msgUI.showTouchMessage("Game Saved!", null, gp);
                 return;
             }
 
             // Press ESC to open the pause menu
             if (code == KeyEvent.VK_ESCAPE) {
-                gp.gsm.setState(GameState.PAUSE);
+                gp.setGameState(GameState.PAUSE);
                 SoundManager.getInstance().stopMusic();
                 return;
             }
@@ -75,8 +75,8 @@ public class GameCommandHandler implements KeyListener {
         }
 
         // ============ PAUSE STATE ==================
-        else if (gp.gsm.getState() == GameState.PAUSE) {
-            var pause = gp.uiManager.get(PauseOverlay.class);
+        else if (gp.getGameState() == GameState.PAUSE) {
+            var pause = gp.getUiManager().get(PauseOverlay.class);
             if (pause == null) return;
 
             switch (code) {
@@ -86,8 +86,8 @@ public class GameCommandHandler implements KeyListener {
             }
         }
         // ============ GAME OVER STATE ==================
-        else if (gp.gsm.getState() == GameState.GAME_OVER) {
-            var gameOver = gp.uiManager.get(ui.screens.gameover.GameOverUI.class);
+        else if (gp.getGameState() == GameState.GAME_OVER) {
+            var gameOver = gp.getUiManager().get(ui.screens.gameover.GameOverUI.class);
             if (gameOver == null) return;
 
             switch (code) {

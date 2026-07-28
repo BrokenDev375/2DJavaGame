@@ -3,94 +3,113 @@ package monster_data;
 import ai.movement.AggroSwitchMovement;
 import ai.movement.ChaseMovement;
 import ai.movement.WanderMovement;
+import entity.Direction;
 import entity.Entity;
 import main.GamePanel;
 import player_manager.Player;
 
 import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class OrcMonster extends Monster {
 
-    private final int wanderSpeed = 1; // chậm hơn goblin, mạnh hơn slime
-
+    private final int wanderSpeed = 1;
 
     public OrcMonster(GamePanel gp, int mapIndex) {
         super(gp);
-        this.mapIndex = mapIndex;
+        setMapIndex(mapIndex);
 
-        name = "Orc";
-        width = gp.tileSize;
-        height = gp.tileSize;
-        this.hasAttackAnim = true;
+        setName("Orc");
+        setSize(gp.tileSize, gp.tileSize);
+        setHasAttackAnimation(true);
 
-        getImage(); // load all frames
+        getImage();
 
-        collision = true;
-        animationON = true;
-        actualSpeed = wanderSpeed;
+        setCollidable(true);
+        setAnimationOn(true);
+        useMovementSpeed(wanderSpeed);
 
-        solidArea = new Rectangle(6, 20, 36, 28);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
+        setSolidArea(new Rectangle(6, 20, 36, 28));
 
-        // ===== Base stats =====
-        setStats(40, 8, 5); // hp, defense, exp drop (tùy bạn)
+        setStats(40, 8, 5);
         this.attackKnockback = 8;
         setExpReward(5);
-        // ===== Combat config =====
-        this.combat.setAttackBoxSize(40, 32);
-        this.combat.setTimingFrames(12, 10, 16, 82);
 
-        // movement AI
+        configureAttackBox(40, 32);
+        configureAttackTiming(12, 10, 16, 82);
+
         var wander = new WanderMovement(2, 240);
-        Supplier<Player> playerSup = () -> (gp.em != null ? gp.em.getPlayer() : null);
-        var chase  = new ChaseMovement(gp, playerSup, 2, gp.tileSize);
+        Supplier<Player> playerSup = () -> (gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null);
+        var chase = new ChaseMovement(playerSup, 2, gp.tileSize);
 
         Predicate<Entity> aggroCond = me -> {
             Player p = playerSup.get();
             if (p == null || p.isDead()) return false;
-            long dx = (long)p.worldX - me.worldX;
-            long dy = (long)p.worldY - me.worldY;
-            long dist2 = dx*dx + dy*dy;
+            long dx = (long) p.getWorldX() - me.getWorldX();
+            long dy = (long) p.getWorldY() - me.getWorldY();
+            long dist2 = dx * dx + dy * dy;
             long r = 1L * gp.tileSize * 6;
-            return dist2 < r*r;
+            return dist2 < r * r;
         };
 
         setController(new AggroSwitchMovement(wander, chase, aggroCond));
-
     }
 
     private void getImage() {
-        // --- Movement frames ---
-        up1    = setup("/monster/orc_up_1", width, height);
-        up2    = setup("/monster/orc_up_2", width, height);
-        down1  = setup("/monster/orc_down_1", width, height);
-        down2  = setup("/monster/orc_down_2", width, height);
-        left1  = setup("/monster/orc_left_1", width, height);
-        left2  = setup("/monster/orc_left_2", width, height);
-        right1 = setup("/monster/orc_right_1", width, height);
-        right2 = setup("/monster/orc_right_2", width, height);
+        int w = getWidth();
+        int h = getHeight();
 
-        // --- Attack frames ---
-        atkUp1    = setup("/monster/orc_attack_up_1", width, height);
-        atkUp2    = setup("/monster/orc_attack_up_2", width, height);
-        atkDown1  = setup("/monster/orc_attack_down_1", width, height);
-        atkDown2  = setup("/monster/orc_attack_down_2", width, height);
-        atkLeft1  = setup("/monster/orc_attack_left_1", width, height);
-        atkLeft2  = setup("/monster/orc_attack_left_2", width, height);
-        atkRight1 = setup("/monster/orc_attack_right_1", width, height);
-        atkRight2 = setup("/monster/orc_attack_right_2", width, height);
+        setMoveSprites(
+                Direction.UP,
+                setup("/monster/orc_up_1", w, h),
+                setup("/monster/orc_up_2", w, h)
+        );
+        setMoveSprites(
+                Direction.DOWN,
+                setup("/monster/orc_down_1", w, h),
+                setup("/monster/orc_down_2", w, h)
+        );
+        setMoveSprites(
+                Direction.LEFT,
+                setup("/monster/orc_left_1", w, h),
+                setup("/monster/orc_left_2", w, h)
+        );
+        setMoveSprites(
+                Direction.RIGHT,
+                setup("/monster/orc_right_1", w, h),
+                setup("/monster/orc_right_2", w, h)
+        );
 
-        atkUp1    = gp.uTool.scaleImage(atkUp1,    width, height * 2);
-        atkUp2    = gp.uTool.scaleImage(atkUp2,    width , height * 2);
-        atkDown1  = gp.uTool.scaleImage(atkDown1,  width , height * 2);
-        atkDown2  = gp.uTool.scaleImage(atkDown2,  width , height * 2);
-        atkLeft1  = gp.uTool.scaleImage(atkLeft1,  width * 2, height);
-        atkLeft2  = gp.uTool.scaleImage(atkLeft2,  width * 2, height);
-        atkRight1 = gp.uTool.scaleImage(atkRight1, width * 2, height);
-        atkRight2 = gp.uTool.scaleImage(atkRight2, width * 2, height);
+        BufferedImage atkUp1 = setup("/monster/orc_attack_up_1", w, h);
+        BufferedImage atkUp2 = setup("/monster/orc_attack_up_2", w, h);
+        BufferedImage atkDown1 = setup("/monster/orc_attack_down_1", w, h);
+        BufferedImage atkDown2 = setup("/monster/orc_attack_down_2", w, h);
+        BufferedImage atkLeft1 = setup("/monster/orc_attack_left_1", w, h);
+        BufferedImage atkLeft2 = setup("/monster/orc_attack_left_2", w, h);
+        BufferedImage atkRight1 = setup("/monster/orc_attack_right_1", w, h);
+        BufferedImage atkRight2 = setup("/monster/orc_attack_right_2", w, h);
 
+        setAttackSprites(
+                Direction.UP,
+                gp.getUtilityTool().scaleImage(atkUp1, w, h * 2),
+                gp.getUtilityTool().scaleImage(atkUp2, w, h * 2)
+        );
+        setAttackSprites(
+                Direction.DOWN,
+                gp.getUtilityTool().scaleImage(atkDown1, w, h * 2),
+                gp.getUtilityTool().scaleImage(atkDown2, w, h * 2)
+        );
+        setAttackSprites(
+                Direction.LEFT,
+                gp.getUtilityTool().scaleImage(atkLeft1, w * 2, h),
+                gp.getUtilityTool().scaleImage(atkLeft2, w * 2, h)
+        );
+        setAttackSprites(
+                Direction.RIGHT,
+                gp.getUtilityTool().scaleImage(atkRight1, w * 2, h),
+                gp.getUtilityTool().scaleImage(atkRight2, w * 2, h)
+        );
     }
 }

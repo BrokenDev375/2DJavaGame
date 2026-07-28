@@ -25,11 +25,11 @@ public class DialogueUI extends BaseUI {
         this.finished = false;
         this.prevPressed = false;
         text.setLength(0);
-        gp.gsm.setState(GameState.DIALOGUE);
+        gp.setGameState(GameState.DIALOGUE);
     }
     // Kiểm tra UI đang hoạt động hay không
     public boolean isActive() {
-        return gp.gsm.getState() == GameState.DIALOGUE && lines != null && index < lines.length;
+        return gp.getGameState() == GameState.DIALOGUE && lines != null && index < lines.length;
     }
 
     // Nhảy trang hoặc hiển thị hết dòng hiện tại
@@ -62,10 +62,10 @@ public class DialogueUI extends BaseUI {
             frame = 0;
         }
         // Lấy input người chơi
-        var p = gp.em.getPlayer();
-        if (p == null || p.input == null) return;
+        var p = gp.getEntityManager().getPlayer();
+        if (p == null) return;
 
-        boolean pressed = p.input.isTalkPressed();
+        boolean pressed = p.isTalkPressed();
 
         // Chỉ xử lý khi phím E được nhấn 1 lần (tránh spam)
         if (pressed && !prevPressed) {
@@ -104,11 +104,11 @@ public class DialogueUI extends BaseUI {
         finished = false;
         index = charIndex = 0;
         // Trả về trạng thái PLAY
-        gp.gsm.setState(GameState.PLAY);
+        gp.setGameState(GameState.PLAY);
         // Reset phím E để tránh NPCInteract đọc lại ngay sau khi thoát hội thoại
-        var p = gp.em.getPlayer();
-        if (p != null && p.input != null) {
-            p.input.resetTalkKey();
+        var p = gp.getEntityManager().getPlayer();
+        if (p != null) {
+            p.resetTalkInput();
         }
         prevPressed = false;
     }
@@ -170,6 +170,6 @@ public class DialogueUI extends BaseUI {
 
     @Override
     public boolean shouldUpdate() {
-        return gp.gsm.getState() == GameState.DIALOGUE;
+        return gp.getGameState() == GameState.DIALOGUE;
     }
 }

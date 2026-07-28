@@ -2,24 +2,17 @@ package object_data.weapons;
 
 import main.GamePanel;
 
-import java.awt.*;
+import java.awt.Rectangle;
 
 public final class Sword extends Weapon {
 
-    public Sword(GamePanel gp ,int mapIndex) {
-        super(gp);
-        this.mapIndex = mapIndex;
-        
-        name = "Argonaut hero's sword";
-        width  = gp.tileSize;
-        height = gp.tileSize;
-        collision = false;
+    public Sword(GamePanel gp, int mapIndex) {
+        super(gp, mapIndex);
+        setName("Argonaut hero's sword");
+        setCollidable(false);
 
         int t = gp.tileSize / 4;
-        solidArea = new Rectangle(-t / 2, -t /2, width + t, height + t);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
-
+        setSolidArea(new Rectangle(-t / 2, -t / 2, getWidth() + t, getHeight() + t));
         loadSprite();
     }
 

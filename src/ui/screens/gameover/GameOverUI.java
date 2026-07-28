@@ -28,7 +28,7 @@ public class GameOverUI extends BaseUI {
             gp.restartGame();
         } else if (commandNum == 1) {
             // Quay lại màn hình START
-            gp.gsm.setState(GameState.START);
+            gp.setGameState(GameState.START);
         }
     }
     @Override
@@ -37,7 +37,7 @@ public class GameOverUI extends BaseUI {
     }
     @Override
     public void draw(Graphics2D g2) {
-        if (gp.gsm.getState() != GameState.GAME_OVER) return;
+        if (gp.getGameState() != GameState.GAME_OVER) return;
         // Nền mờ phủ toàn màn hình
         g2.setColor(new Color(0, 0, 0, 150));
         g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);

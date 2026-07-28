@@ -2,23 +2,17 @@ package object_data.weapons;
 
 import main.GamePanel;
 
-import java.awt.*;
+import java.awt.Rectangle;
 
 public final class Axe extends Weapon {
-    
-    public Axe(GamePanel gp, int mapIndex ) {
-        super(gp);
-        name = "Leviathan Axe";
-        this.mapIndex = mapIndex;
-        
-        width  = gp.tileSize;
-        height = gp.tileSize;
-        collision = false;
+
+    public Axe(GamePanel gp, int mapIndex) {
+        super(gp, mapIndex);
+        setName("Leviathan Axe");
+        setCollidable(false);
 
         int t = gp.tileSize / 4;
-        solidArea = new Rectangle(-t / 2, -t /2, width + t, height + t);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
+        setSolidArea(new Rectangle(-t / 2, -t / 2, getWidth() + t, getHeight() + t));
         loadSprite();
     }
 

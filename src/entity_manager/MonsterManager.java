@@ -1,6 +1,7 @@
 package entity_manager;
 
 import entity.Entity;
+import main.DebugLog;
 import main.GamePanel;
 import monster_data.*;
 
@@ -54,11 +55,11 @@ public class MonsterManager {
         int t = gp.tileSize;
 
         // Lưu lại map hiện tại của ChunkManager để restore sau
-        String oldPath = gp.chunkM.pathMap;
+        String oldPath = gp.getChunkManager().getMapPath();
 
         // ================= MAP 0: Slime field =================
-        gp.chunkM.loadMap("map0");
-        gp.chunkM.loadAllChunksSync();     // load toàn bộ chunk map0 để check collision
+        gp.getChunkManager().loadMap("map0");
+        gp.getChunkManager().loadAllChunksSync();     // load toàn bộ chunk map0 để check collision
 
         for (int ty = 18; ty <= 72; ty += 9) {
             for (int tx = 18; tx <= 72; tx += 9) {
@@ -73,8 +74,8 @@ public class MonsterManager {
         }
 
         // ================= MAP 1: Orc + Bat + Boss =================
-        gp.chunkM.loadMap("map1");
-        gp.chunkM.loadAllChunksSync();     // load toàn bộ chunk map1 để check collision
+        gp.getChunkManager().loadMap("map1");
+        gp.getChunkManager().loadAllChunksSync();     // load toàn bộ chunk map1 để check collision
 
         // Vùng quái thường: khoảng 30 con (5 hàng x 6 cột = 30 vị trí)
         int mobCount = 0;
@@ -98,7 +99,7 @@ public class MonsterManager {
 
         addSpawn(1, 50* t, 75 * t, "BOSS", 600_000L); // ~10 phút respawn
 
-        gp.chunkM.loadMap(oldPath);
+        gp.getChunkManager().loadMap(oldPath);
     }
 
     private void addSpawn(int mapId, int wx, int wy,
@@ -123,8 +124,7 @@ public class MonsterManager {
             return;
         }
 
-        m.worldX = slot.worldX;
-        m.worldY = slot.worldY;
+        m.spawnAt(slot.worldX, slot.worldY);
 
         if (m instanceof monster_data.Monster monster) {
             monster.setHome(slot.worldX, slot.worldY);
@@ -171,8 +171,8 @@ public class MonsterManager {
 
                 if (isDead(e)) {
                     if (DEBUG_MONSTER) {
-                        System.out.println("[DEAD] " + e.name + " @map=" + mapId +
-                                " x=" + e.worldX + " y=" + e.worldY);
+                        DebugLog.info("[DEAD] " + e.getName() + " @map=" + mapId +
+                                " x=" + e.getWorldX() + " y=" + e.getWorldY());
                     }
                     registerDeath(e);
                     it.remove();
@@ -228,7 +228,7 @@ public class MonsterManager {
             }
 
             if (DEBUG_MONSTER) {
-                System.out.println("[RESPAWN_OK] " + slot.monsterId + " -> spawnNow");
+                DebugLog.info("[RESPAWN_OK] " + slot.monsterId + " -> spawnNow");
             }
             spawnNow(slot);
         }
@@ -243,6 +243,6 @@ public class MonsterManager {
 
     private boolean isBlockedTile(int mapId, int worldX, int worldY) {
         // mapId hiện vẫn chưa cần dùng, vì ChunkManager đang trỏ
-        return gp.tileM.isCollisionAtWorld(worldX, worldY, gp.chunkM);
+        return gp.getTileManager().isCollisionAtWorld(worldX, worldY, gp.getChunkManager());
     }
 }

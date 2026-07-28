@@ -13,24 +13,24 @@ public class PlayerInteractor {
     }
 
     public void allCheck(int nextX, int nextY){
-        gp.cChecker.checkTile(player, nextX, nextY);
+        gp.getCollisionChecker().checkTile(player, nextX, nextY);
 
         // TÍNH delta từ vị trí hiện tại -> vị trí kế tiếp
-        int dx = nextX - player.worldX;
-        int dy = nextY - player.worldY;
+        int dx = nextX - player.getWorldX();
+        int dy = nextY - player.getWorldY();
 
         // DÙNG API MỚI cho object (WorldObject)
-        int objIndex = gp.cChecker.checkWorldObject(
+        int objIndex = gp.getCollisionChecker().checkWorldObject(
                 player,
-                gp.om.getObjects(gp.currentMap),
+                gp.getObjectManager().getObjects(gp.getCurrentMap()),
                 dx, dy
         );
-        player.iR.InteractObject(objIndex);
+        player.interactObject(objIndex);
 
-        int monsterIndex = gp.cChecker.checkEntity(player, gp.em.getMonsters(gp.currentMap), nextX, nextY);
-        player.iR.InteractMonster(monsterIndex);
+        int monsterIndex = gp.getCollisionChecker().checkEntity(player, gp.getEntityManager().getMonsters(gp.getCurrentMap()), nextX, nextY);
+        player.interactMonster(monsterIndex);
 
-        int npcIndex = gp.cChecker.checkEntity(player, gp.em.getNPCs(gp.currentMap), nextX, nextY);
-        player.iR.InteractNPC(npcIndex);
+        int npcIndex = gp.getCollisionChecker().checkEntity(player, gp.getEntityManager().getNPCs(gp.getCurrentMap()), nextX, nextY);
+        player.interactNPC(npcIndex);
     }
 }

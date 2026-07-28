@@ -15,8 +15,8 @@ public class HealthUI extends BaseUI {
     @Override
     public void draw(Graphics2D g2){
         // Lấy chỉ số máu hiện tại và tối đa
-        int max = gp.em.getPlayer().getMaxHP();
-        int cur = gp.em.getPlayer().getHP();
+        int max = gp.getEntityManager().getPlayer().getMaxHP();
+        int cur = gp.getEntityManager().getPlayer().getHP();
 
         // Kích thước và vị trí của thanh máu
         int barWidth = gp.tileSize * 4;

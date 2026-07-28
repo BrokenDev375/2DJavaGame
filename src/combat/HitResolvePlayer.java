@@ -4,7 +4,6 @@ import entity.Entity;
 import monster_data.Monster;
 import player_manager.Player;
 
-import java.awt.Rectangle;
 import java.util.List;
 
 public final class HitResolvePlayer {
@@ -12,10 +11,7 @@ public final class HitResolvePlayer {
 
     public static void resolve(Player player, List<Entity> monsters) {
         if (player == null || player.isDead()) return;
-        if (!CombatSystem.isAttackActive(player.combat)) return;
-
-        Rectangle attack = player.combat.getAttackBox();
-        if (attack == null || attack.width <= 0 || attack.height <= 0) return;
+        if (!player.isAttackActive()) return;
 
         int rawDamage = Math.max(1, player.getATK());
         int[] knockback = CombatSystem.computePlayerAttackKnockback(player);
@@ -25,12 +21,11 @@ public final class HitResolvePlayer {
             Monster m = (Monster) e;
             if (m.isDead()) continue;
 
-            Rectangle monsterBody = CollisionUtil.getEntityBodyWorldRect(m);
-            if (!attack.intersects(monsterBody)) continue;
+            if (!player.isAttackHitting(m)) continue;
 
-            if (!CombatSystem.wasHitThisSwing(player.combat, m)) {
-                DamageProcessor.applyDamage(m, rawDamage, knockback[0], knockback[1]);
-                CombatSystem.markHitLanded(player.combat, m);
+            if (!player.wasHitThisSwing(m)) {
+                DamageProcessor.applyDamage(m, player, rawDamage, knockback[0], knockback[1]);
+                player.markHitLanded(m);
             }
         }
     }

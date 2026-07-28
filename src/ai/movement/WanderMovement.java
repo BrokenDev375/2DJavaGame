@@ -1,25 +1,32 @@
 package ai.movement;
 
+import entity.Direction;
 import entity.Entity;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class WanderMovement implements MovementController {
     private final int speed;
     private final int changeEveryFrames;
-    private final int minHoldFrames; // giữ hướng tối thiểu để tránh giật
+    private final int minHoldFrames;
     private final boolean bounded;
-    private final int minX, minY, maxX, maxY; // vùng [min, max] theo world px
-    private final int fencePadding; // "rào mềm" tính bằng px
+    private final int minX;
+    private final int minY;
+    private final int maxX;
+    private final int maxY;
+    private final int fencePadding;
 
-    private int counter = 0, hold = 0;
-    private String currentDir = "down";
+    private int counter = 0;
+    private int hold = 0;
+    private Direction currentDir = Direction.DOWN;
     private final Random rng = new Random();
 
     public WanderMovement(int speed, int changeEveryFrames) {
-        this(speed, changeEveryFrames, /*minHoldFrames*/8);
+        this(speed, changeEveryFrames, 8);
     }
 
-    /** Không giới hạn vùng, nhưng mượt hơn nhờ giữ hướng tối thiểu. */
     public WanderMovement(int speed, int changeEveryFrames, int minHoldFrames) {
         this.speed = speed;
         this.changeEveryFrames = Math.max(1, changeEveryFrames);
@@ -28,7 +35,6 @@ public class WanderMovement implements MovementController {
         this.minX = this.minY = this.maxX = this.maxY = this.fencePadding = 0;
     }
 
-    /** Giới hạn trong vùng chữ nhật [minX,minY]—[maxX,maxY] với “rào mềm” fencePadding. */
     public WanderMovement(int speed, int changeEveryFrames, int minHoldFrames,
                           int minX, int minY, int maxX, int maxY, int fencePadding) {
         this.speed = speed;
@@ -43,14 +49,10 @@ public class WanderMovement implements MovementController {
     }
 
     @Override
-    public void decide(Entity e) {
-        e.actualSpeed = speed;
-
-        // Nếu đang “giữ hướng” và (không sát rào) thì giữ tiếp
+    public MovementIntent decide(Entity e) {
         if (hold < minHoldFrames && !(bounded && nearFence(e, currentDir))) {
             hold++;
-            e.direction = currentDir;
-            return;
+            return MovementIntent.move(currentDir, speed);
         }
 
         counter++;
@@ -59,18 +61,17 @@ public class WanderMovement implements MovementController {
                 || isBlocked(e);
 
         if (needChange) {
-            counter = 0; hold = 0;
+            counter = 0;
+            hold = 0;
 
-            // Danh sách hướng ứng viên
-            String[] candidates = new String[] { "up", "down", "left", "right" };
-            String[] valid = bounded ? filterValidDirections(e, candidates) : candidates;
+            Direction[] candidates = Direction.values();
+            Direction[] valid = bounded ? filterValidDirections(e, candidates) : candidates;
 
-            if (valid.length == 0) { // phòng trường hợp kẹt rào + va chạm
+            if (valid.length == 0) {
                 valid = candidates;
             }
 
-            // Nếu sát rào, ưu tiên hướng quay vào trong
-            String inward = bounded ? pickInwardIfNearFence(e) : null;
+            Direction inward = bounded ? pickInwardIfNearFence(e) : null;
             if (inward != null && contains(valid, inward)) {
                 currentDir = inward;
             } else {
@@ -78,57 +79,56 @@ public class WanderMovement implements MovementController {
             }
         }
 
-        e.direction = currentDir;
+        return MovementIntent.move(currentDir, speed);
     }
-
-    // --- helpers ---
 
     private boolean isBlocked(Entity e) {
-        // Dựa trên cờ collision được set ở bước move tách trục của engine
-        return e.collisionXOn || e.collisionYOn;
+        return e.wasBlockedByCollision();
     }
 
-    private String[] filterValidDirections(Entity e, String[] dirs) {
-        java.util.List<String> ok = new java.util.ArrayList<>();
-        for (String d : dirs) if (!wouldExceedBounds(e, d)) ok.add(d);
-        return ok.toArray(new String[0]);
-    }
-
-    private boolean wouldExceedBounds(Entity e, String dir) {
-        if (!bounded) return false;
-        int nx = e.worldX, ny = e.worldY;
-        switch (dir) {
-            case "up":    ny -= speed; break;
-            case "down":  ny += speed; break;
-            case "left":  nx -= speed; break;
-            case "right": nx += speed; break;
+    private Direction[] filterValidDirections(Entity e, Direction[] dirs) {
+        List<Direction> ok = new ArrayList<>();
+        for (Direction d : dirs) {
+            if (!wouldExceedBounds(e, d)) {
+                ok.add(d);
+            }
         }
+        return ok.toArray(new Direction[0]);
+    }
+
+    private boolean wouldExceedBounds(Entity e, Direction dir) {
+        if (!bounded) {
+            return false;
+        }
+        int nx = e.getWorldX() + dir.scaledDx(speed);
+        int ny = e.getWorldY() + dir.scaledDy(speed);
         return nx < minX || nx > maxX || ny < minY || ny > maxY;
     }
 
-    private boolean nearFence(Entity e, String dir) {
-        int nx = e.worldX, ny = e.worldY;
-        switch (dir) {
-            case "up":    ny -= speed; break;
-            case "down":  ny += speed; break;
-            case "left":  nx -= speed; break;
-            case "right": nx += speed; break;
-        }
+    private boolean nearFence(Entity e, Direction dir) {
+        int nx = e.getWorldX() + dir.scaledDx(speed);
+        int ny = e.getWorldY() + dir.scaledDy(speed);
         return nx <= minX + fencePadding || nx >= maxX - fencePadding
                 || ny <= minY + fencePadding || ny >= maxY - fencePadding;
     }
 
-    private String pickInwardIfNearFence(Entity e) {
-        if (!bounded) return null;
-        if (e.worldY <= minY + fencePadding) return "down";
-        if (e.worldY >= maxY - fencePadding) return "up";
-        if (e.worldX <= minX + fencePadding) return "right";
-        if (e.worldX >= maxX - fencePadding) return "left";
+    private Direction pickInwardIfNearFence(Entity e) {
+        if (!bounded) {
+            return null;
+        }
+        if (e.getWorldY() <= minY + fencePadding) return Direction.DOWN;
+        if (e.getWorldY() >= maxY - fencePadding) return Direction.UP;
+        if (e.getWorldX() <= minX + fencePadding) return Direction.RIGHT;
+        if (e.getWorldX() >= maxX - fencePadding) return Direction.LEFT;
         return null;
     }
 
-    private boolean contains(String[] arr, String v) {
-        for (String s : arr) if (s.equals(v)) return true;
+    private boolean contains(Direction[] arr, Direction v) {
+        for (Direction s : arr) {
+            if (s == v) {
+                return true;
+            }
+        }
         return false;
     }
 }

@@ -4,6 +4,7 @@ import object_data.items.*;
 import object_data.*;
 import entity.Entity;            // lấy player để tính world->screen
 import main.GamePanel;
+import main.DebugLog;
 import object_data.weapons.*;
 
 import java.awt.Graphics2D;
@@ -47,9 +48,8 @@ public class ObjectManager {
         addObject(new Axe(gp, 3), 16 * t , 18 * t);
     }
     public void addObject(WorldObject obj, int wx, int wy) {
-        obj.worldX = wx;
-        obj.worldY = wy;
-        objectsByMap.computeIfAbsent(obj.mapIndex, k -> new ArrayList<>()).add(obj);
+        obj.moveTo(wx, wy);
+        objectsByMap.computeIfAbsent(obj.getMapIndex(), k -> new ArrayList<>()).add(obj);
     }
 
     public List<WorldObject> getObjects(int mapId) {
@@ -58,7 +58,7 @@ public class ObjectManager {
 
     // ==== Tick ====
     public void update() {
-        update(gp.currentMap);
+        update(gp.getCurrentMap());
     }
     public void update(int mapId) {
         for (WorldObject o : getObjects(mapId))
@@ -66,7 +66,7 @@ public class ObjectManager {
     }
 
     public void draw(Graphics2D g2, Entity player) {
-        draw(g2, gp.currentMap, player);
+        draw(g2, gp.getCurrentMap(), player);
     }
 
     public void draw(Graphics2D g2, int mapId, Entity player) {
@@ -74,32 +74,20 @@ public class ObjectManager {
 
         List<WorldObject> list = getObjects(mapId);
 
-        final int leftWorld  = player.worldX - player.screenX - gp.tileSize;
-        final int rightWorld = player.worldX + (gp.screenWidth - player.screenX) + gp.tileSize;
-        final int topWorld   = player.worldY - player.screenY - gp.tileSize;
-        final int botWorld   = player.worldY + (gp.screenHeight - player.screenY) + gp.tileSize;
-
         for (WorldObject o : list) {
-
-
-            int ow = (o.width  > 0 ? o.width  : gp.tileSize);
-            int oh = (o.height > 0 ? o.height : gp.tileSize);
-            int ox2 = o.worldX + ow;
-            int oy2 = o.worldY + oh;
-
-            if (ox2 < leftWorld || o.worldX > rightWorld || oy2 < topWorld || o.worldY > botWorld) {
+            if (!gp.getCamera().isVisible(o, player, gp.tileSize)) {
                 continue;
             }
 
-            int sx = o.worldX - player.worldX + player.screenX;
-            int sy = o.worldY - player.worldY + player.screenY;
+            int sx = gp.getCamera().screenX(o, player);
+            int sy = gp.getCamera().screenY(o, player);
 
             BufferedImage img = null;
             try {
                 img = o.getRenderImage();
             } catch (NoSuchMethodError | Exception ignored) {}
 
-            if (img == null) img = o.staticImage;
+            if (img == null) img = o.getStaticImage();
 
             if (img != null) g2.drawImage(img, sx, sy, null);
 
@@ -118,7 +106,7 @@ public class ObjectManager {
         addObject(potion, wx, wy);
 
         int size = getObjects(mapIndex).size();
-        System.out.println("[DROP] HealthPosion spawn tại map " + mapIndex +
+        DebugLog.info("[DROP] HealthPosion spawn at map " + mapIndex +
                 " (" + wx + ", " + wy + ")  -> list size = " + size);
     }
     public void spawnSword(int mapIndex, int wx, int wy) {
@@ -126,7 +114,7 @@ public class ObjectManager {
         addObject(sword, wx, wy);
 
         int size = getObjects(mapIndex).size();
-        System.out.println("[DROP] Sword spawn tại map " + mapIndex +
+        DebugLog.info("[DROP] Sword spawn at map " + mapIndex +
                 " (" + wx + ", " + wy + ")  -> list size = " + size);
     }
 }

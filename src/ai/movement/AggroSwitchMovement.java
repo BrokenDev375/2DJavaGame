@@ -9,11 +9,10 @@ public class AggroSwitchMovement implements MovementController {
     private final MovementController aggroController;
     private final Predicate<Entity> aggroCondition;
 
-    // --- chống bật/tắt liên tục ---
-    private final int onFrames  = 3;
+    private final int onFrames = 3;
     private final int offFrames = 6;
 
-    private int onCount  = 0;
+    private int onCount = 0;
     private int offCount = 0;
     private boolean isAggro = false;
 
@@ -25,21 +24,30 @@ public class AggroSwitchMovement implements MovementController {
     }
 
     @Override
-    public void decide(Entity e) {
+    public MovementIntent decide(Entity e) {
         boolean wantAggro = aggroCondition != null && aggroCondition.test(e);
 
         if (wantAggro) {
-            onCount  = Math.min(onCount + 1, 1000);
+            onCount = Math.min(onCount + 1, 1000);
             offCount = Math.max(offCount - 1, 0);
         } else {
             offCount = Math.min(offCount + 1, 1000);
-            onCount  = Math.max(onCount - 1, 0);
+            onCount = Math.max(onCount - 1, 0);
         }
 
-        if (!isAggro && onCount >= onFrames)  { isAggro = true;  offCount = 0; }
-        if ( isAggro && offCount >= offFrames){ isAggro = false; onCount  = 0; }
+        if (!isAggro && onCount >= onFrames) {
+            isAggro = true;
+            offCount = 0;
+        }
+        if (isAggro && offCount >= offFrames) {
+            isAggro = false;
+            onCount = 0;
+        }
 
-        if (isAggro) aggroController.decide(e);
-        else         idleController.decide(e);
+        MovementController activeController = isAggro ? aggroController : idleController;
+        if (activeController == null) {
+            return MovementIntent.stop();
+        }
+        return activeController.decide(e);
     }
 }

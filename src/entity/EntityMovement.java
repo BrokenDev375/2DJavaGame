@@ -2,98 +2,98 @@ package entity;
 
 import main.GamePanel;
 import object_data.WorldObject;
+import player_manager.Player;
 
 import java.util.List;
 
 public class EntityMovement {
     private final GamePanel gp;
-    public EntityMovement(GamePanel gp){ this.gp = gp; }
 
-    //move after direction
-    public void moveByDirection(Entity e){
-        int dx = 0, dy = 0;
-        switch (e.direction) {
-            case "up":    dy = -e.actualSpeed; break;
-            case "down":  dy =  e.actualSpeed; break;
-            case "left":  dx = -e.actualSpeed; break;
-            case "right": dx =  e.actualSpeed; break;
-        }
-        moveWithDelta(e, dx, dy);
+    public EntityMovement(GamePanel gp) {
+        this.gp = gp;
     }
 
-    // move after AI movement
-    public void moveWithDelta(Entity e, int dx, int dy){
-        e.collisionOn = false;
+    public void moveByDirection(Entity entity) {
+        Direction direction = entity.getDirection();
+        int speed = entity.getActualSpeed();
+        moveWithDelta(entity, direction.scaledDx(speed), direction.scaledDy(speed));
+    }
 
-        int nextX = e.worldX + dx;
-        int nextY = e.worldY + dy;
+    public void moveWithDelta(Entity entity, int dx, int dy) {
+        entity.clearCollisionState();
 
-        gp.cChecker.checkTile(e, nextX, nextY);
+        int nextX = entity.getWorldX() + dx;
+        int nextY = entity.getWorldY() + dy;
 
-        List<WorldObject> objs = gp.om.getObjects(gp.currentMap);
-        int objIndex = gp.cChecker.checkWorldObject(e, objs, dx, dy);
-        if (objIndex != 999) {
-            var obj = objs.get(objIndex);
-            if (obj != null && obj.collision) e.collisionOn = true;
+        gp.getCollisionChecker().checkTile(entity, nextX, nextY);
+
+        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
+        int objectIndex = gp.getCollisionChecker().checkWorldObject(entity, objects, dx, dy);
+        if (objectIndex != 999) {
+            WorldObject object = objects.get(objectIndex);
+            if (object != null && object.isCollidable()) entity.markCollision();
         }
 
-        gp.cChecker.checkPlayer(e, nextX, nextY);
+        gp.getCollisionChecker().checkPlayer(entity, nextX, nextY);
 
-        if (!e.collisionOn) {
-            e.worldX = nextX;
-            e.worldY = nextY;
+        if (entity.canMove()) {
+            entity.moveBy(dx, dy);
         }
     }
-    public void applyKnockback(Entity e) {
-        int vx = Math.max(-24, Math.min(24, e.velX));
-        int vy = Math.max(-24, Math.min(24, e.velY));
 
-        // --- X ---
-        if (vx != 0) {
-            int stepX = (vx > 0) ? 1 : -1;
-            for (int i = 0; i < Math.abs(vx); i++) {
-                if (willCollide(e, stepX, 0)) { e.velX = 0; break; }
-                e.worldX += stepX;
+    public void applyKnockback(Entity entity) {
+        int velocityX = clamp(entity.knockbackVelocityX(), -24, 24);
+        int velocityY = clamp(entity.knockbackVelocityY(), -24, 24);
+
+        moveOnePixelSteps(entity, velocityX, 0);
+        moveOnePixelSteps(entity, 0, velocityY);
+
+        entity.tickKnockbackDuration();
+        if (entity.isKnockbackFinished() || !entity.hasKnockbackVelocity()) {
+            entity.finishKnockback();
+        }
+    }
+
+    private void moveOnePixelSteps(Entity entity, int velocityX, int velocityY) {
+        if (velocityX == 0 && velocityY == 0) return;
+
+        int stepX = Integer.compare(velocityX, 0);
+        int stepY = Integer.compare(velocityY, 0);
+        int steps = Math.max(Math.abs(velocityX), Math.abs(velocityY));
+
+        for (int i = 0; i < steps; i++) {
+            if (willCollide(entity, stepX, stepY)) {
+                if (stepX != 0) entity.stopKnockbackVelocityX();
+                if (stepY != 0) entity.stopKnockbackVelocityY();
+                return;
             }
-        }
-        // --- Y ---
-        if (vy != 0) {
-            int stepY = (vy > 0) ? 1 : -1;
-            for (int i = 0; i < Math.abs(vy); i++) {
-                if (willCollide(e, 0, stepY)) { e.velY = 0; break; }
-                e.worldY += stepY;
-            }
-        }
-
-        e.setKnockbackCounter(e.getKnockbackCounter() - 1);
-        if (e.getKnockbackCounter() <= 0 || (e.velX == 0 && e.velY == 0)) {
-            e.clearVelocity();
-            e.setKnockbackCounter(0);
+            entity.moveBy(stepX, stepY);
         }
     }
 
-    private boolean willCollide(Entity e, int dx, int dy) {
-        e.collisionOn = false;
+    private boolean willCollide(Entity entity, int dx, int dy) {
+        entity.clearCollisionState();
 
-        int nextX = e.worldX + dx;
-        int nextY = e.worldY + dy;
+        int nextX = entity.getWorldX() + dx;
+        int nextY = entity.getWorldY() + dy;
 
-        // Tiles
-        gp.cChecker.checkTile(e, nextX, nextY);
+        gp.getCollisionChecker().checkTile(entity, nextX, nextY);
 
-        // Objects
-        var objs = gp.om.getObjects(gp.currentMap);
-        int objIndex = gp.cChecker.checkWorldObject(e, objs, dx, dy);
-        if (objIndex != 999) {
-            var obj = objs.get(objIndex);
-            if (obj != null && obj.collision) e.collisionOn = true;
+        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
+        int objectIndex = gp.getCollisionChecker().checkWorldObject(entity, objects, dx, dy);
+        if (objectIndex != 999) {
+            WorldObject object = objects.get(objectIndex);
+            if (object != null && object.isCollidable()) entity.markCollision();
         }
 
-        if (!(e instanceof player_manager.Player)) {
-            gp.cChecker.checkPlayer(e, nextX, nextY);        // quái check va chạm với Player
-        } else {
+        if (!(entity instanceof Player)) {
+            gp.getCollisionChecker().checkPlayer(entity, nextX, nextY);
         }
 
-        return e.collisionOn;
+        return !entity.canMove();
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

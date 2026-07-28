@@ -1,88 +1,67 @@
 package entity;
 
 import combat.*;
+import main.DebugLog;
 import main.GamePanel;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import ai.movement.MovementController;
+import ai.movement.MovementIntent;
+import world.WorldBody;
 
 /** Base class for all world entities (player, monsters, NPCs). */
-public class Entity implements CombatContext {
+public class Entity implements CombatContext, WorldBody {
 
-    // --- world/screen ---
-    public int worldX, worldY;
-    public int width, height;
-    public final int screenX;
-    public final int screenY;
+    private final MapPlacement placement = new MapPlacement();
+    private final EntitySize size = new EntitySize();
 
     // --- animation ---
-    public BufferedImage up1, up2, down1, down2, left1, left2, right1, right2;
-    public BufferedImage atkUp1, atkUp2, atkDown1, atkDown2, atkLeft1, atkLeft2, atkRight1, atkRight2;
-    public BufferedImage staticImage;
-    public String direction = "down";  // hướng cho di chuyển / AI
-    public String attackDir = "down";  // hướng đã lock cho animation tấn công
-    public int spriteCounter = 0;
-    public int spriteNum = 1;
+    private final EntitySprites sprites = new EntitySprites();
+    private Direction direction = Direction.DOWN;  // hướng cho di chuyển / AI
+    private Direction attackDir = Direction.DOWN;  // hướng đã lock cho animation tấn công
+    private final EntityAnimationState animationState = new EntityAnimationState();
 
     // --- collision ---
-    public Rectangle solidArea;
-    public boolean collisionXOn = false;
-    public boolean collisionYOn = false;
-    public boolean collisionOn = false;
-    public boolean collision = false;
-    public int solidAreaDefaultX, solidAreaDefaultY;
+    private final EntityCollision collisionState = new EntityCollision();
+    private boolean collidable = false;
 
     // --- state / stats ---
-    public String name;
-    public int defaultSpeed, actualSpeed, buffSpeed;
-    public boolean animationON = false;
+    private String name;
+    private int defaultSpeed, actualSpeed, buffSpeed;
+    private boolean animationOn = false;
 
     private int hp = 1, maxHp = 1, atk = 1, def = 0;
 
-    // --- i-frames ---
-    private boolean invulnerable = false;
-    private int invulnFrames = 20; // ~0.33s @60fps
-    private int invulnCounter = 0;
+    private final DamageState damageState = new DamageState();
+    private final KnockbackState knockbackState = new KnockbackState();
 
     // --- Fields (thêm hoặc giữ nếu đã có) ---
-    public int velX = 0, velY = 0;
-    private int knockbackCounter = 0;
-    private int knockbackFrames = 12;
-
-    // --- attack box (shared with CombatComponent) ---
-    public Rectangle attackBox = new Rectangle(0, 0, 0, 0);
 
     // --- systems/manager ---
-    public final GamePanel gp;
-    protected final EntityMovement emo;
-    protected final EntitySpriteManager esm;
-    protected final EntityDraw ed;
-    public int mapIndex = 0;
+    protected final GamePanel gp;
+    private final EntityMovement emo;
+    private final EntitySpriteManager esm;
+    private final EntityDraw ed;
 
     // === Dialogue System ===
-    public String[][] dialogues = new String[20][20];  // [set][line]
-    public int dialogueSet = 0;
+    private final DialogueComponent dialogue = new DialogueComponent(20, 20);
 
     // --- Combat ECS ---
-    public final CombatComponent combat;
+    private final CombatComponent combat;
 
     // --- Movement Controller (AI / input strategy) ---
-    protected MovementController controller;
-    public boolean hasAttackAnim = false; // default: false (Slime, v.v.)
-    public Entity lastHitBy = null;
+    private MovementController controller;
+    private boolean hasAttackAnimation = false; // default: false (Slime, v.v.)
 
     public Entity(GamePanel gp) {
         this.gp = gp;
-        this.screenX = gp.screenWidth / 2 - (gp.tileSize / 2);
-        this.screenY = gp.screenHeight / 2 - (gp.tileSize / 2);
 
         this.emo = new EntityMovement(gp);
         this.esm = new EntitySpriteManager();
         this.ed = new EntityDraw(gp);
 
         this.combat = new CombatComponent();
-        this.attackBox = combat.getAttackBox(); // dùng chung rect để code vẽ cũ không phải đổi
         this.attackDir = this.direction;  // init mặc định
     }
 
@@ -93,6 +72,324 @@ public class Entity implements CombatContext {
 
     public MovementController getController() {
         return controller;
+    }
+
+    private void applyMovementIntent(MovementIntent intent) {
+        if (intent == null || !intent.isMoving()) {
+            stopMoving();
+            return;
+        }
+        face(intent.getDirection());
+        useMovementSpeed(intent.getSpeed());
+        emo.moveByDirection(this);
+    }
+
+    // -------- movement behavior ----------
+    public void face(Direction newDirection) {
+        if (newDirection != null) {
+            this.direction = newDirection;
+        }
+    }
+
+    public void lockAttackDirection() {
+        this.attackDir = this.direction;
+    }
+
+    public Direction getAttackDirection() {
+        return attackDir;
+    }
+
+    public void useMovementSpeed(int speed) {
+        this.actualSpeed = Math.max(0, speed);
+    }
+
+    public void useAtLeastMovementSpeed(int speed) {
+        useMovementSpeed(Math.max(actualSpeed, Math.max(0, speed)));
+    }
+
+    public void stopMoving() {
+        this.actualSpeed = 0;
+    }
+
+    public void setDefaultMovementSpeed(int speed) {
+        this.defaultSpeed = Math.max(0, speed);
+    }
+
+    public void resetMovementSpeed() {
+        useMovementSpeed(defaultSpeed);
+    }
+
+    public int getDefaultMovementSpeed() {
+        return defaultSpeed;
+    }
+
+    public int getActualSpeed() {
+        return actualSpeed;
+    }
+
+    public void setBuffSpeed(int speed) {
+        this.buffSpeed = Math.max(0, speed);
+    }
+
+    public int getBuffSpeed() {
+        return buffSpeed;
+    }
+
+    public void moveBy(int dx, int dy) {
+        placement.moveBy(dx, dy);
+    }
+
+    public void moveTo(int x, int y) {
+        setWorldPosition(x, y);
+    }
+
+    public void spawnAt(int x, int y) {
+        setWorldPosition(x, y);
+    }
+
+    public void restorePosition(int x, int y) {
+        setWorldPosition(x, y);
+    }
+
+    private void setWorldPosition(int x, int y) {
+        placement.moveTo(x, y);
+    }
+
+    public boolean canMove() {
+        return collisionState.canMove();
+    }
+
+    public boolean canMoveOnX() {
+        return collisionState.canMoveOnX();
+    }
+
+    public boolean canMoveOnY() {
+        return collisionState.canMoveOnY();
+    }
+
+    public boolean wasBlockedByCollision() {
+        return collisionState.wasBlockedByCollision();
+    }
+
+    public void clearCollisionState() {
+        collisionState.clearCollisionState();
+    }
+
+    public void clearCollisionXState() {
+        collisionState.clearCollisionXState();
+    }
+
+    public void clearCollisionYState() {
+        collisionState.clearCollisionYState();
+    }
+
+    public void markCollision() {
+        collisionState.markCollision();
+    }
+
+    public void markCollisionX() {
+        collisionState.markCollisionX();
+    }
+
+    public void markCollisionY() {
+        collisionState.markCollisionY();
+    }
+
+    public boolean isCollidable() {
+        return collidable;
+    }
+
+    public void setCollidable(boolean collidable) {
+        this.collidable = collidable;
+    }
+
+    public boolean isAnimationOn() {
+        return animationOn;
+    }
+
+    public void setAnimationOn(boolean animationOn) {
+        this.animationOn = animationOn;
+    }
+
+    public boolean hasAttackAnimation() {
+        return hasAttackAnimation;
+    }
+
+    public void setHasAttackAnimation(boolean hasAttackAnimation) {
+        this.hasAttackAnimation = hasAttackAnimation;
+    }
+
+    public void setMoveSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+        sprites.setMoveSprites(direction, firstFrame, secondFrame);
+    }
+
+    public void setAttackSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+        sprites.setAttackSprites(direction, firstFrame, secondFrame);
+    }
+
+    public void useMoveSpritesForAttack() {
+        sprites.useMoveSpritesForAttack();
+    }
+
+    public BufferedImage getMoveSprite(Direction direction) {
+        return sprites.getMoveSprite(direction, isFirstSpriteFrame());
+    }
+
+    public BufferedImage getAttackSprite(Direction direction) {
+        return sprites.getAttackSprite(direction, isFirstSpriteFrame());
+    }
+
+    public void setStaticImage(BufferedImage image) {
+        sprites.setStaticImage(image);
+    }
+
+    public BufferedImage getStaticImage() {
+        return sprites.getStaticImage();
+    }
+
+    public void advanceSpriteFrame(int frameDelay) {
+        animationState.advanceFrame(frameDelay);
+    }
+
+    public void resetSpriteFrame() {
+        animationState.resetFrame();
+    }
+
+    public boolean isFirstSpriteFrame() {
+        return animationState.isFirstFrame();
+    }
+
+    public boolean isAttacking() {
+        return CombatSystem.isAttacking(combat);
+    }
+
+    public boolean isAttackActive() {
+        return CombatSystem.isAttackActive(combat);
+    }
+
+    public boolean isAttackHitting(WorldBody target) {
+        return isAttackActive() && target != null && combat.attackIntersects(target.getSolidAreaWorld());
+    }
+
+    public int getAttackPhase() {
+        return CombatSystem.getPhase(combat);
+    }
+
+    public boolean canStartAttack() {
+        return CombatSystem.canStartAttack(combat);
+    }
+
+    public void startAttack() {
+        CombatSystem.startAttack(combat, this);
+    }
+
+    public void tickCombat() {
+        CombatSystem.update(combat, this);
+        CombatSystem.updateStatus(this);
+    }
+
+    public void configureAttackBox(int width, int height) {
+        combat.setAttackBoxSize(width, height);
+    }
+
+    public void configureAttackTiming(int windup, int active, int recover, int cooldown) {
+        combat.setTimingFrames(windup, active, recover, cooldown);
+    }
+
+    public boolean wasHitThisSwing(Object target) {
+        return combat.wasHitThisSwing(target);
+    }
+
+    public void markHitLanded(Object target) {
+        combat.markHit(target);
+    }
+
+    public void clearHitThisSwing() {
+        combat.clearHitThisSwing();
+    }
+
+    public int getAttackKnockbackForce() {
+        return combat.getKnockbackForce();
+    }
+
+    public void setAttackKnockbackForce(int force) {
+        combat.setKnockbackForce(force);
+    }
+
+    public GamePanel getGamePanel() {
+        return gp;
+    }
+
+    public Entity getLastHitBy() {
+        return damageState.getLastHitBy();
+    }
+
+    public void markHitBy(Entity attacker) {
+        damageState.markHitBy(attacker);
+    }
+
+    public void clearLastHitBy() {
+        damageState.clearLastHitBy();
+    }
+
+    public void defineDialogueLine(int setIndex, int lineIndex, String text) {
+        dialogue.defineLine(setIndex, lineIndex, text);
+    }
+
+    public void chooseDialogueSet(int setIndex) {
+        dialogue.chooseSet(setIndex);
+    }
+
+    public int getDialogueSetIndex() {
+        return dialogue.getCurrentSetIndex();
+    }
+
+    public String[] getCurrentDialogueSet() {
+        return dialogue.getCurrentSet();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getMapIndex() {
+        return placement.getMapIndex();
+    }
+
+    public void setMapIndex(int mapIndex) {
+        placement.setMapIndex(mapIndex);
+    }
+
+    public boolean isOnMap(int mapIndex) {
+        return placement.isOnMap(mapIndex);
+    }
+
+    public void setSize(int width, int height) {
+        size.set(width, height);
+    }
+
+    public int getWidth() {
+        return size.getWidth();
+    }
+
+    public int getHeight() {
+        return size.getHeight();
+    }
+
+    public void setSolidArea(Rectangle area) {
+        collisionState.setSolidArea(area);
+    }
+
+    public Rectangle getSolidAreaAt(int worldX, int worldY) {
+        return collisionState.getSolidAreaAt(worldX, worldY, getWidth(), getHeight());
+    }
+
+    public Rectangle getSolidAreaWorld() {
+        return getSolidAreaAt(getWorldX(), getWorldY());
     }
 
     // -------- stats ----------
@@ -119,25 +416,61 @@ public class Entity implements CombatContext {
         return def;
     }
 
-    public void setHP(int value) {
+    private void setHP(int value) {
         this.hp = Math.max(0, Math.min(value, maxHp));
     }
-    public void reduceHP(int amount) {
+
+    public void restoreHP(int value) {
+        setHP(value);
+    }
+
+    public void refillHP() {
+        restoreHP(maxHp);
+    }
+
+    public void heal(int amount) {
+        if (amount <= 0) return;
+        restoreHP(hp + amount);
+    }
+
+    public void healPercent(double percent) {
+        if (percent <= 0) return;
+        int healAmount = (int) Math.round(maxHp * percent);
+        heal(Math.max(1, healAmount));
+    }
+
+    public void kill() {
+        restoreHP(0);
+    }
+
+    protected void reduceHP(int amount) {
         int dmg = Math.max(0, amount);
         int old = hp;
         hp = Math.max(0, hp - dmg);
 
-        System.out.println("[HP] " + name +
+        DebugLog.info("[HP] " + name +
                 " -" + dmg +
                 " (" + old + " -> " + hp + ")");
     }
 
-    public void setInvulnFrames(int frames) {
-        invulnFrames = Math.max(0, frames);
+    public boolean takeDamage(Entity attacker, int rawDamage, int knockbackX, int knockbackY) {
+        if (isDead() || isInvulnerable()) return false;
+
+        int damage = Math.max(1, rawDamage - getDEF());
+        markHitBy(attacker);
+        reduceHP(damage);
+        startInvulnerability();
+        startKnockback(knockbackX, knockbackY);
+        onDamaged(damage);
+        return true;
     }
 
-    public int getInvulnFrames() {
-        return invulnFrames;
+    public boolean takeDamage(int rawDamage, int knockbackX, int knockbackY) {
+        return takeDamage(null, rawDamage, knockbackX, knockbackY);
+    }
+
+    public void setInvulnFrames(int frames) {
+        damageState.setInvulnFrames(frames);
     }
 
     @Override
@@ -146,95 +479,95 @@ public class Entity implements CombatContext {
     }
 
     public boolean isInvulnerable() {
-        return invulnerable;
+        return damageState.isInvulnerable();
     }
 
-    public void setInvulnerable(boolean v) {
-        invulnerable = v;
+    public void startInvulnerability() {
+        damageState.startInvulnerability();
     }
 
-    public int getInvulnCounter() {
-        return invulnCounter;
-    }
-
-    public void setInvulnCounter(int v) {
-        invulnCounter = v;
-    }
-
-    public int getKnockbackFrames() {
-        return knockbackFrames;
-    }
-
-    public int getKnockbackCounter() {
-        return knockbackCounter;
-    }
-
-    public void setKnockbackCounter(int v) {
-        knockbackCounter = v;
+    public void tickInvulnerability() {
+        damageState.tickInvulnerability();
     }
 
     public boolean isKnockbackActive() {
-        return knockbackCounter > 0;
+        return knockbackState.isActive();
+    }
+
+    public boolean isKnockbackFinished() {
+        return knockbackState.isFinished();
     }
 
     public void setKnockbackFrames(int f) {
-        knockbackFrames = Math.max(1, f);
+        knockbackState.setDurationFrames(f);
     }
 
-    public void clearVelocity() {
-        this.velX = 0;
-        this.velY = 0;
+    public void tickKnockbackDuration() {
+        knockbackState.tickDuration();
+    }
+
+    public void finishKnockback() {
+        knockbackState.finish();
+    }
+
+    int knockbackVelocityX() {
+        return knockbackState.velocityX();
+    }
+
+    int knockbackVelocityY() {
+        return knockbackState.velocityY();
+    }
+
+    boolean hasKnockbackVelocity() {
+        return knockbackState.hasVelocity();
+    }
+
+    void stopKnockbackVelocityX() {
+        knockbackState.stopVelocityX();
+    }
+
+    void stopKnockbackVelocityY() {
+        knockbackState.stopVelocityY();
     }
 
     @Override
     public int getWorldX() {
-        return worldX;
+        return placement.getWorldX();
     }
 
     @Override
     public int getWorldY() {
-        return worldY;
+        return placement.getWorldY();
     }
 
     @Override
     public Rectangle getSolidArea() {
-        return (solidArea != null)
-                ? solidArea
-                : new Rectangle(0, 0, Math.max(1, width), Math.max(1, height));
+        return collisionState.getSolidArea(getWidth(), getHeight());
     }
 
     @Override
-    public String getDirection() {
+    public Direction getDirection() {
         return direction;
     }
 
     protected int[] computeDelta() {
-        int dx = 0, dy = 0;
-        switch (direction) {
-            case "up":
-                dy = -actualSpeed;
-                break;
-            case "down":
-                dy = actualSpeed;
-                break;
-            case "left":
-                dx = -actualSpeed;
-                break;
-            case "right":
-                dx = actualSpeed;
-                break;
-        }
-        return new int[]{dx, dy};
+        return new int[]{
+                direction.scaledDx(getActualSpeed()),
+                direction.scaledDy(getActualSpeed())
+        };
+    }
+
+    protected void applyKnockbackMovement() {
+        emo.applyKnockback(this);
     }
 
     public void update() {
         // Nếu đang KB → chỉ đẩy; bỏ qua input/AI ở frame này
         if (isKnockbackActive()) {
-            emo.applyKnockback(this);
+            applyKnockbackMovement();
         } else {
             if (controller != null) {
-                controller.decide(this);
-                emo.moveByDirection(this);
+                applyMovementIntent(controller.decide(this));
             } else {
                 int[] d = computeDelta();
                 emo.moveWithDelta(this, d[0], d[1]);
@@ -258,29 +591,27 @@ public class Entity implements CombatContext {
     public void onDamaged(int damage) {
     }
 
-    public void applyKnockback(int kbX, int kbY, int durationFrames) {
-        velX = kbX;
-        velY = kbY;
-        knockbackCounter = durationFrames;
+    public void startKnockback(int kbX, int kbY, int durationFrames) {
+        knockbackState.start(kbX, kbY, durationFrames);
+    }
+
+    public void startKnockback(int kbX, int kbY) {
+        knockbackState.start(kbX, kbY);
     }
 
     // --- Save/Load support ---
 
     public void revive() {
+        clearLastHitBy();
         this.hp = Math.max(1, maxHp); // hồi sinh với full máu
     }
 
     // === Dialogue Support ===
     public void facePlayer() {
-        if (gp == null || gp.em == null) return;
-        var player = gp.em.getPlayer();
+        if (gp == null || gp.getEntityManager() == null) return;
+        var player = gp.getEntityManager().getPlayer();
         if (player == null) return;
-        switch (player.direction) {
-            case "up" -> direction = "down";
-            case "down" -> direction = "up";
-            case "left" -> direction = "right";
-            case "right" -> direction = "left";
-        }
+        face(player.getDirection().opposite());
     }
 
     public void speak(GamePanel gp) {

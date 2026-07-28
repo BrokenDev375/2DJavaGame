@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package interact_manager.object_interact.weapon;
 
 import main.GamePanel;
@@ -19,16 +15,14 @@ public class SwordInteraction implements IObjectInteraction {
 
     @Override
     public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.uiManager.get(MessageUI.class);
-        List<WorldObject> objects = gp.om.getObjects(gp.currentMap);
+        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
+        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
 
         if (msgUI != null) msgUI.showTouchMessage("It's the argonaut hero's sword! Press F to pick", obj, gp);
         if (input.isPicked()) {
             SoundManager.getInstance().playSE(SoundManager.SoundID.COIN);
             objects.remove(obj);
-            player.setCurrentWeapon(new Sword(gp, gp.currentMap));
-            Weapon temp = player.getCurrentWeapon();
-            player.equipWeapon(temp);
+            player.equipWeapon(new Sword(gp, gp.getCurrentMap()));
             if (msgUI != null) msgUI.showTouchMessage("Ya got the legendary sword!", obj, gp);
         }
     }

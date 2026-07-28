@@ -1,9 +1,13 @@
 package monster_data;
 
 import combat.CombatSystem;
+import entity.Direction;
 import entity.Entity;
+import main.DebugLog;
 import main.GamePanel;
 import player_manager.Player;
+import world.WorldBody;
+
 import java.awt.Rectangle;
 
 public abstract class Monster extends Entity {
@@ -14,7 +18,7 @@ public abstract class Monster extends Entity {
     protected int attackTriggerRadius  = 36;
     protected int faceLockThreshold    = 4;
     protected int atkW, atkH;
-    public int homeX, homeY; // toạ độ “nhà” để leash + wander quanh
+    private int homeX, homeY; // toạ độ “nhà” để leash + wander quanh
 
     // --- EXP config ---
     protected int expReward = 1;   // quái này cho bao nhiêu EXP khi chết
@@ -22,13 +26,13 @@ public abstract class Monster extends Entity {
     public Monster(GamePanel gp) {
         super(gp);
 
-        this.combat.setAttackBoxSize(gp.tileSize, gp.tileSize * 3 / 2);
-        this.combat.setTimingFrames(8, 6, 10, 30) ;
+        configureAttackBox(gp.tileSize, gp.tileSize * 3 / 2);
+        configureAttackTiming(8, 6, 10, 30) ;
         this.attackTriggerRadius = Math.max(gp.tileSize, 48);
         this.faceLockThreshold = 6;
         this.atkW = gp.tileSize;
         this.atkH = gp.tileSize * 3 / 2;
-        this.combat.setAttackBoxSize(atkW, atkH);
+        configureAttackBox(atkW, atkH);
     }
     // Getter/Setter EXP
     public int getExpReward() {
@@ -54,26 +58,34 @@ public abstract class Monster extends Entity {
         decideAttack();
 
         // 2) Giữ vị trí nếu đang attack
-        int preX = worldX, preY = worldY;
-        boolean holdPos = CombatSystem.isAttacking(combat);
+        int preX = getWorldX(), preY = getWorldY();
+        boolean holdPos = isAttacking();
 
         super.update();
 
         if (holdPos) {
-            worldX = preX;
-            worldY = preY;
+            restorePosition(preX, preY);
         }
     }
     public void setHome(int x, int y) {
         this.homeX = x;
         this.homeY = y;
     }
+
+    public int getHomeX() {
+        return homeX;
+    }
+
+    public int getHomeY() {
+        return homeY;
+    }
+
     protected void decideAttack() {
         // Không cho spam: nếu CombatSystem đang trong 1 đòn thì bỏ qua
-        if (CombatSystem.isAttacking(this.combat)) return;
+        if (isAttacking()) return;
 
         // 0) Lấy player an toàn
-        Player p = (gp.em != null ? gp.em.getPlayer() : null);
+        Player p = (gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null);
         if (p == null || p.isDead()) return;
 
         // 1) Tính body rect của quái & player (world space)
@@ -95,19 +107,19 @@ public abstract class Monster extends Entity {
         final int rh = (atkH > 0 ? atkH : gp.tileSize);
 
         Rectangle reach = new Rectangle(meBody);
-        switch (this.direction) {
-            case "up":
+        switch (this.getDirection()) {
+            case UP:
                 reach.y      -= rh;
                 reach.height += rh;
                 break;
-            case "down":
+            case DOWN:
                 reach.height += rh;
                 break;
-            case "left":
+            case LEFT:
                 reach.x     -= rw;
                 reach.width += rw;
                 break;
-            default: // "right"
+            case RIGHT:
                 reach.width += rw;
                 break;
         }
@@ -120,75 +132,70 @@ public abstract class Monster extends Entity {
 
     protected void tryStartAttackOn(Player p) {
         // 1) CombatSystem phải cho phép (cooldown, state…)
-        if (!CombatSystem.canStartAttack(this.combat)) return;
+        if (!canStartAttack()) return;
 
         // 2) Xoay mặt 1 lần về phía player
         faceOnceToward(p);
 
         // 3) LOCK HƯỚNG ĐÁNH: chụp lại hướng tại thời điểm này
-        this.attackDir = this.direction;
+        this.lockAttackDirection();
 
         // 4) Bắt đầu đòn đánh
-        CombatSystem.startAttack(this.combat, this);
-        this.combat.clearHitThisSwing();
+        startAttack();
+        clearHitThisSwing();
     }
 
     private void faceOnceToward(Player p) {
-        int dx = p.worldX - this.worldX;
-        int dy = p.worldY - this.worldY;
+        int dx = p.getWorldX() - this.getWorldX();
+        int dy = p.getWorldY() - this.getWorldY();
         if (Math.abs(dx) > Math.abs(dy)) {
-            this.direction = (dx >= 0) ? "right" : "left";
+            this.face((dx >= 0) ? Direction.RIGHT : Direction.LEFT);
         } else {
-            this.direction = (dy >= 0) ? "down" : "up";
+            this.face((dy >= 0) ? Direction.DOWN : Direction.UP);
         }
     }
 
-    protected Rectangle getSolidAreaWorld() {
-        Rectangle sa = this.getSolidArea();
-        return new Rectangle(this.worldX + sa.x, this.worldY + sa.y, sa.width, sa.height);
-    }
-    protected static Rectangle getSolidAreaWorld(Entity e) {
-        Rectangle sa = e.getSolidArea();
-        return new Rectangle(e.worldX + sa.x, e.worldY + sa.y, sa.width, sa.height);
+    protected static Rectangle getSolidAreaWorld(WorldBody body) {
+        return body.getSolidAreaWorld();
     }
     public void onDeath() {
         // 1) EXP
-        Player p = (gp != null && gp.em != null) ? gp.em.getPlayer() : null;
+        Player p = (gp != null && gp.getEntityManager() != null) ? gp.getEntityManager().getPlayer() : null;
         if (p != null) {
             int expGain = getExpReward();
-            System.out.println("[EXP] Thưởng cho player: +" + expGain + " EXP từ " + name);
+            DebugLog.info("[EXP] +" + expGain + " for " + getName());
             p.gainExp(expGain);
         } else {
-            System.out.println("[EXP] Không tìm thấy player để cộng EXP");
+            DebugLog.info("[EXP] player not found");
         }
 
         // 2) 25% drop
         double roll = Math.random();
-        System.out.println("[DROP] Roll = " + roll);
+        DebugLog.info("[DROP] roll=" + roll);
         if (roll < 0.25) {
-            System.out.println("[DROP] => Rơi HealthPosion");
+            DebugLog.info("[DROP] health potion");
             spawnHealthPosionDrop();
         } else {
-            System.out.println("[DROP] => Không rơi gì");
+            DebugLog.info("[DROP] none");
         }
     }
 
     private void spawnHealthPosionDrop() {
-        if (gp == null || gp.om == null) return;
+        if (gp == null || gp.getObjectManager() == null) return;
 
-        gp.om.spawnHealthPosion(this.mapIndex, this.worldX, this.worldY);
+        gp.getObjectManager().spawnHealthPosion(this.getMapIndex(), this.getWorldX(), this.getWorldY());
     }
 
-    public void reduceHP(int amount) {
+    protected void reduceHP(int amount) {
         boolean wasDead = isDead();
-        System.out.println("[DMG] " + name + " nhận " + amount + " dmg (hp=" + getHP() + ")");
+        DebugLog.info("[DMG] " + getName() + " incoming=" + amount + " hp=" + getHP());
 
         super.reduceHP(amount);
 
-        System.out.println("[DMG] " + name + " sau khi trừ hp=" + getHP());
+        DebugLog.info("[DMG] " + getName() + " hp=" + getHP());
 
         if (!wasDead && isDead()) {
-            System.out.println("[DEATH] " + name + " vừa chết");
+            DebugLog.info("[DEATH] " + getName());
             onDeath();
         }
     }

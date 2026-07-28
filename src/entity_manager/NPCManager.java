@@ -18,14 +18,13 @@ public class NPCManager {
     private void spawnNPCs() {
         int t = gp.tileSize;
         NPC_Oldman oldman0 = new NPC_Oldman(gp, 3);
-        oldman0.worldX = 10 * t;
-        oldman0.worldY = 20 * t;
+        oldman0.spawnAt(10 * t, 20 * t);
         addNPC(oldman0);
 
     }
 
     public void addNPC(Entity npc) {
-        npcsByMap.computeIfAbsent(npc.mapIndex, k -> new ArrayList<>()).add(npc);
+        npcsByMap.computeIfAbsent(npc.getMapIndex(), k -> new ArrayList<>()).add(npc);
     }
 
     public List<Entity> getNPCs(int mapId) {

@@ -22,20 +22,20 @@ public class ObjectInteract {
         this.gp = gp;
         this.player = player;
         this.input = input;
-        this.msgUI = gp.uiManager.get(MessageUI.class);
+        this.msgUI = gp.getUiManager().get(MessageUI.class);
     }
 
     public void handle(int index) {
         if (index != 999) {
-            List<WorldObject> objects = gp.om.getObjects(gp.currentMap);
+            List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
             if (index >= 0 && index < objects.size()) {
                 WorldObject obj = objects.get(index);
-                if (obj != null && obj.mapIndex == gp.currentMap) {
-                    IObjectInteraction handler = ObjectInteractionFactory.getHandler(obj.name);
+                if (obj != null && obj.isOnMap(gp.getCurrentMap())) {
+                    IObjectInteraction handler = ObjectInteractionFactory.getHandler(obj.getName());
                     if (handler != null) {
                         handler.interact(gp, player, input, obj);
                     } else if (msgUI != null) {
-                        msgUI.showTouchMessage("Unknown object: " + obj.name, obj, gp);
+                        msgUI.showTouchMessage("Unknown object: " + obj.getName(), obj, gp);
                     }
                 }
             }

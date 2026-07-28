@@ -15,16 +15,7 @@ public class EntitySpriteManager {
 
     }
     public void updateSprite(Entity e){
-        e.spriteCounter++;
-        if(e.spriteCounter > 8){
-            if(e.spriteNum == 1){
-                e.spriteNum = 2;
-            }
-            else if(e.spriteNum == 2){
-                e.spriteNum = 1;
-            }
-            e.spriteCounter = 0;
-        }
+        e.advanceSpriteFrame(8);
     }
     public BufferedImage setup(String imagePath, int width , int height){
         BufferedImage image = null;

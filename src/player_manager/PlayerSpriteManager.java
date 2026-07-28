@@ -1,5 +1,6 @@
 package player_manager;
 
+import entity.Direction;
 import entity.Entity;
 import main.GamePanel;
 
@@ -18,17 +19,29 @@ public class PlayerSpriteManager {
     }
 
     public void loadMoveSprites(Entity player) {
-        player.up1 = player.setup("/player/boy_up_1", gp.tileSize, gp.tileSize);
-        player.up2 = player.setup("/player/boy_up_2", gp.tileSize, gp.tileSize);
+        player.setMoveSprites(
+                Direction.UP,
+                player.setup("/player/boy_up_1", gp.tileSize, gp.tileSize),
+                player.setup("/player/boy_up_2", gp.tileSize, gp.tileSize)
+        );
 
-        player.down1 = player.setup("/player/boy_down_1", gp.tileSize, gp.tileSize);
-        player.down2 = player.setup("/player/boy_down_2", gp.tileSize, gp.tileSize);
+        player.setMoveSprites(
+                Direction.DOWN,
+                player.setup("/player/boy_down_1", gp.tileSize, gp.tileSize),
+                player.setup("/player/boy_down_2", gp.tileSize, gp.tileSize)
+        );
 
-        player.left1 = player.setup("/player/boy_left_1", gp.tileSize, gp.tileSize);
-        player.left2 = player.setup("/player/boy_left_2", gp.tileSize, gp.tileSize);
+        player.setMoveSprites(
+                Direction.LEFT,
+                player.setup("/player/boy_left_1", gp.tileSize, gp.tileSize),
+                player.setup("/player/boy_left_2", gp.tileSize, gp.tileSize)
+        );
 
-        player.right1 = player.setup("/player/boy_right_1", gp.tileSize, gp.tileSize);
-        player.right2 = player.setup("/player/boy_right_2", gp.tileSize, gp.tileSize);
+        player.setMoveSprites(
+                Direction.RIGHT,
+                player.setup("/player/boy_right_1", gp.tileSize, gp.tileSize),
+                player.setup("/player/boy_right_2", gp.tileSize, gp.tileSize)
+        );
     }
 
     public void loadAttackSprites(Entity player, String weaponKey) {
@@ -61,14 +74,10 @@ public class PlayerSpriteManager {
                         right1 != null && right2 != null;
 
         if (allLoaded) {
-            p.atkUp1 = up1;
-            p.atkUp2 = up2;
-            p.atkDown1 = down1;
-            p.atkDown2 = down2;
-            p.atkLeft1 = left1;
-            p.atkLeft2 = left2;
-            p.atkRight1 = right1;
-            p.atkRight2 = right2;
+            p.setAttackSprites(Direction.UP, up1, up2);
+            p.setAttackSprites(Direction.DOWN, down1, down2);
+            p.setAttackSprites(Direction.LEFT, left1, left2);
+            p.setAttackSprites(Direction.RIGHT, right1, right2);
         }
 
         return allLoaded;

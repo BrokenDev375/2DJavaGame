@@ -21,7 +21,7 @@ public class NPCInteract {
         this.gp = gp;
         this.player = player;
         this.input = input;
-        this.msgUI = gp.uiManager.get(MessageUI.class);  // <<< lấy sẵn
+        this.msgUI = gp.getUiManager().get(MessageUI.class);  // <<< lấy sẵn
     }
 
     public void handle(int index) {
@@ -29,7 +29,7 @@ public class NPCInteract {
         if (index == 999) return;
 
         // Lấy list NPC ở map hiện tại
-        List<Entity> npcs = gp.em.getNPCs(gp.currentMap);
+        List<Entity> npcs = gp.getEntityManager().getNPCs(gp.getCurrentMap());
         if (npcs == null || npcs.isEmpty()) return;
         if (index < 0 || index >= npcs.size()) return;
 
@@ -38,12 +38,12 @@ public class NPCInteract {
         if (npc == null) return;
 
         // Nếu đang ở trạng thái PLAY mới xử lý
-        if (gp.gsm.getState() != GameState.PLAY) return;
+        if (gp.getGameState() != GameState.PLAY) return;
 
         // ========== HINT KHI LẠI GẦN ÔNG NỘI ==========
         // Chỉ hiện khi CHƯA bấm F
         if (!input.isPicked()) {
-            if (msgUI != null && "OldMan".equals(npc.name)) {  // name của NPC là OldMan
+            if (msgUI != null && "OldMan".equalsIgnoreCase(npc.getName())) {
                 msgUI.showTouchMessage(
                         "Press F to talk to your grandpa.",
                         npc,
@@ -57,9 +57,9 @@ public class NPCInteract {
         // ========== ĐOẠN DƯỚI GIỮ Y NGUYÊN NHƯ CŨ ==========
         // When player presses F (pick key)
         // If dialogue box is already open, ignore
-        DialogueUI dialogue = gp.uiManager.get(DialogueUI.class);
+        DialogueUI dialogue = gp.getUiManager().get(DialogueUI.class);
         if (dialogue != null && dialogue.isActive()) return;
-        if (gp.gsm.getState() != GameState.PLAY) return;
+        if (gp.getGameState() != GameState.PLAY) return;
 
         // Prevent spamming the F key
         if (!player.isInteracting()) {

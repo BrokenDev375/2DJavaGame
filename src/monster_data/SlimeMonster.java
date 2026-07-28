@@ -1,6 +1,7 @@
 package monster_data;
 
 import ai.movement.WanderMovement;
+import entity.Direction;
 import main.GamePanel;
 
 import java.awt.Rectangle;
@@ -10,19 +11,17 @@ public class SlimeMonster extends Monster {
 
     public SlimeMonster(GamePanel gp, int mapIndex) {
         super(gp);
-        this.mapIndex = mapIndex;
+        setMapIndex(mapIndex);
 
-        name = "Green Slime";
-        width = gp.tileSize; height = gp.tileSize;
-        this.hasAttackAnim = false;
+        setName("Green Slime");
+        setSize(gp.tileSize, gp.tileSize);
+        setHasAttackAnimation(false);
         getImage();
 
-        collision = true; animationON = true;
-        actualSpeed = wanderSpeed;
+        setCollidable(true); setAnimationOn(true);
+        useMovementSpeed(wanderSpeed);
 
-        solidArea = new Rectangle(3, 18, 42, 30);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
+        setSolidArea(new Rectangle(3, 18, 42, 30));
 
         // Stats sinh tồn
         setStats(10, 2, 1);
@@ -31,21 +30,33 @@ public class SlimeMonster extends Monster {
         this.attackKnockback = 6;
         this.attackTriggerRadius = 28;
         // attackbox and timming
-        this.combat.setAttackBoxSize(28, 28);
-        this.combat.setTimingFrames(6, 6, 10, 98);
+        configureAttackBox(28, 28);
+        configureAttackTiming(6, 6, 10, 98);
 
         // easy movement
         setController(new WanderMovement(/*speed*/wanderSpeed, /*changeEveryFrames*/120));
     }
 
     private void getImage(){
-        up1    = setup("/monster/greenslime_down_1" , width , height);
-        up2    = setup("/monster/greenslime_down_2" , width , height);
-        down1  = setup("/monster/greenslime_down_1" , width , height);
-        down2  = setup("/monster/greenslime_down_2" , width , height);
-        right1 = setup("/monster/greenslime_down_1",  width , height);
-        right2 = setup("/monster/greenslime_down_2" , width , height);
-        left1  = setup("/monster/greenslime_down_1" , width , height);
-        left2  = setup("/monster/greenslime_down_2" , width , height);
+        setMoveSprites(
+                Direction.UP,
+                setup("/monster/greenslime_down_1" , getWidth() , getHeight()),
+                setup("/monster/greenslime_down_2" , getWidth() , getHeight())
+        );
+        setMoveSprites(
+                Direction.DOWN,
+                setup("/monster/greenslime_down_1" , getWidth() , getHeight()),
+                setup("/monster/greenslime_down_2" , getWidth() , getHeight())
+        );
+        setMoveSprites(
+                Direction.RIGHT,
+                setup("/monster/greenslime_down_1",  getWidth() , getHeight()),
+                setup("/monster/greenslime_down_2" , getWidth() , getHeight())
+        );
+        setMoveSprites(
+                Direction.LEFT,
+                setup("/monster/greenslime_down_1" , getWidth() , getHeight()),
+                setup("/monster/greenslime_down_2" , getWidth() , getHeight())
+        );
     }
 }

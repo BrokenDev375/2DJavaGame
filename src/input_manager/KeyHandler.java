@@ -7,8 +7,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class KeyHandler implements KeyListener, InputController{
-    public boolean  down, left, right, up;
-    public boolean pick ,attack,talk;
+    private boolean down, left, right, up;
+    private boolean pick, attack, talk;
 
     // default must be public 
     @Override

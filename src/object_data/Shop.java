@@ -1,27 +1,18 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package object_data;
 
-import java.awt.Rectangle;
 import main.GamePanel;
+
+import java.awt.Rectangle;
 
 public class Shop extends WorldObject {
 
     public Shop(GamePanel gp, int mapIndex) {
         super(gp);
-        this.mapIndex = mapIndex;
-
-        name   = "shop";
-        width  = gp.tileSize * 4;
-        height = gp.tileSize * 4;
-
-        staticImage = setup("/object/shop", width, height);
-        collision = false;
-
-        solidArea = new Rectangle(0, 0, width, height);
-        solidAreaDefaultX = solidArea.x;
-        solidAreaDefaultY = solidArea.y;
+        setMapIndex(mapIndex);
+        setName("shop");
+        setSize(gp.tileSize * 4, gp.tileSize * 4);
+        setStaticImage(setup("/object/shop", getWidth(), getHeight()));
+        setCollidable(false);
+        setSolidArea(new Rectangle(0, 0, getWidth(), getHeight()));
     }
 }

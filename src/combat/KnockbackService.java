@@ -1,5 +1,6 @@
 package combat;
 
+import entity.Direction;
 import monster_data.Monster;
 import player_manager.Player;
 
@@ -15,10 +16,10 @@ public final class KnockbackService {
 
     // Player → Monster
     public static int[] forPlayerAttack(Player p) {
-        if (p == null || p.combat == null) return new int[]{0,0};
+        if (p == null) return new int[]{0,0};
 
-        int baseForce = (p.combat.getKnockbackForce() > 0)
-                ? p.combat.getKnockbackForce()
+        int baseForce = (p.getAttackKnockbackForce() > 0)
+                ? p.getAttackKnockbackForce()
                 : DEFAULT_PLAYER_KB;
 
         // ATK an toàn khi null
@@ -28,18 +29,12 @@ public final class KnockbackService {
         // scale nhẹ theo ATK (0..+50%); điều chỉnh tuỳ game
         int scaled = (int) Math.round(baseForce * (1.0 + Math.min(atk, 50) * 0.01));
 
-        String dir = null;
+        Direction dir = Direction.RIGHT;
         try { dir = p.getDirection(); } catch (Exception ignore) {}
-        dir = (dir == null) ? "right" : dir.toLowerCase();
+        dir = (dir == null) ? Direction.RIGHT : dir;
 
-        int kx, ky;
-        switch (dir) {
-            case "up":    kx = 0;        ky = -scaled; break;
-            case "down":  kx = 0;        ky =  scaled; break;
-            case "left":  kx = -scaled;  ky = 0;       break;
-            case "right": kx =  scaled;  ky = 0;       break;
-            default:      kx =  scaled;  ky = 0;
-        }
+        int kx = dir.scaledDx(scaled);
+        int ky = dir.scaledDy(scaled);
 
         return new int[]{ clamp(kx, -MAX_KB, MAX_KB), clamp(ky, -MAX_KB, MAX_KB) };
     }
@@ -48,8 +43,8 @@ public final class KnockbackService {
     public static int[] forMonsterAttack(Monster m, Player player) {
         if (m == null || m.isDead() || player == null || player.isDead()) return new int[]{0,0};
 
-        int kbForce = (m.combat != null && m.combat.getKnockbackForce() > 0)
-                ? m.combat.getKnockbackForce()
+        int kbForce = (m.getAttackKnockbackForce() > 0)
+                ? m.getAttackKnockbackForce()
                 : DEFAULT_MONSTER_KB;
 
         int dx = player.getWorldX() - m.getWorldX();

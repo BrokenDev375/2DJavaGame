@@ -1,86 +1,89 @@
 package player_manager;
 
+import entity.Direction;
 import main.GamePanel;
 
 public class PlayerMovement {
     private final Player player;
     private final PlayerInteractor pi;
 
-    public PlayerMovement(Player player, GamePanel gp){
+    public PlayerMovement(Player player, GamePanel gp) {
         this.player = player;
         this.pi = new PlayerInteractor(player, gp);
     }
 
-    public int[] calculateMovement(){
-
-        // không bấm gì thì đứng yên
+    public PlayerMoveIntent calculateMovement() {
         if (!isMoving()) {
-            return new int[]{0, 0};
+            return PlayerMoveIntent.idle();
         }
 
         int dirX = 0;
         int dirY = 0;
+        Direction facingDirection = player.getDirection();
 
-        // xác định hướng
-        if (player.input.isUpPressed()) {
-            player.direction = "up";
+        if (player.isMoveUpPressed()) {
+            facingDirection = Direction.UP;
             dirY -= 1;
         }
-        if (player.input.isDownPressed()) {
-            player.direction = "down";
+        if (player.isMoveDownPressed()) {
+            facingDirection = Direction.DOWN;
             dirY += 1;
         }
-        if (player.input.isLeftPressed()) {
-            player.direction = "left";
+        if (player.isMoveLeftPressed()) {
+            facingDirection = Direction.LEFT;
             dirX -= 1;
         }
-        if (player.input.isRightPressed()) {
-            player.direction = "right";
+        if (player.isMoveRightPressed()) {
+            facingDirection = Direction.RIGHT;
             dirX += 1;
         }
 
         int deltaMoveX;
         int deltaMoveY;
 
-        // đi chéo
         if (dirX != 0 && dirY != 0) {
-            // speed / sqrt(2) rồi làm tròn -> nhanh hơn xíu
-            double step = player.actualSpeed / Math.sqrt(2.0);
-            int moveDiag = (int) Math.round(step);  // với speed=5 -> 4
-
-            deltaMoveX = dirX * moveDiag;
-            deltaMoveY = dirY * moveDiag;
+            int diagonalStep = (int) Math.round(player.getActualSpeed() / Math.sqrt(2.0));
+            deltaMoveX = dirX * diagonalStep;
+            deltaMoveY = dirY * diagonalStep;
         } else {
-            // đi thẳng
-            deltaMoveX = dirX * player.actualSpeed;
-            deltaMoveY = dirY * player.actualSpeed;
+            deltaMoveX = dirX * player.getActualSpeed();
+            deltaMoveY = dirY * player.getActualSpeed();
         }
 
-        return new int[]{deltaMoveX, deltaMoveY};
+        return PlayerMoveIntent.move(facingDirection, deltaMoveX, deltaMoveY);
     }
 
-    public boolean isMoving(){
-        return player.input.isUpPressed() || player.input.isDownPressed() ||
-                player.input.isLeftPressed() || player.input.isRightPressed();
+    public boolean isMoving() {
+        return player.isMoveUpPressed() || player.isMoveDownPressed()
+                || player.isMoveLeftPressed() || player.isMoveRightPressed();
     }
 
-    public void move(int dx, int dy){
-        player.collisionOn=false;
-        player.collisionXOn=false;
+    public void move(PlayerMoveIntent intent) {
+        if (intent == null || !intent.isMoving()) {
+            return;
+        }
 
-        int nextX = player.worldX + dx;
-        int nextY = player.worldY;
+        player.face(intent.getFacingDirection());
+        move(intent.getDeltaX(), intent.getDeltaY());
+    }
+
+    private void move(int dx, int dy) {
+        player.clearCollisionXState();
+
+        int nextX = player.getWorldX() + dx;
+        int nextY = player.getWorldY();
         pi.allCheck(nextX, nextY);
-        if(!player.collisionXOn && !player.collisionOn)
-            player.worldX = nextX;
+        if (player.canMoveOnX()) {
+            player.moveBy(dx, 0);
+        }
 
-        player.collisionOn=false;
-        player.collisionYOn=false;
+        player.clearCollisionYState();
 
-        nextX = player.worldX;
-        nextY = player.worldY + dy;
+        nextX = player.getWorldX();
+        nextY = player.getWorldY() + dy;
         pi.allCheck(nextX, nextY);
-        if(!player.collisionYOn && !player.collisionOn)
-            player.worldY = nextY;
+        if (player.canMoveOnY()) {
+            player.moveBy(0, dy);
+        }
     }
 }

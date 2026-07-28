@@ -120,14 +120,14 @@ public class MainMenuUI extends BaseUI {
         switch (focusIndex) {
             case 0 -> { // PLAY
                 gp.restartGame();
-                gp.gsm.setState(GameState.PLAY);
+                gp.setGameState(GameState.PLAY);
                 SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
             }
             case 1 -> { // LOAD GAME
-                if (gp.saveManager != null)
-                    gp.saveManager.loadGame(gp);
+                if (gp.getSaveManager() != null)
+                    gp.getSaveManager().loadGame(gp);
 
-                gp.gsm.setState(GameState.PLAY);
+                gp.setGameState(GameState.PLAY);
                 SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
             }
             case 2 -> System.exit(0);      // QUIT
@@ -148,16 +148,16 @@ public class MainMenuUI extends BaseUI {
     // ==== Điều kiện vẽ UI ====
     @Override
     public boolean shouldRenderIn(GameState state) {
-        return gp.gsm.getState() == GameState.START;
+        return gp.getGameState() == GameState.START;
     }
 
     @Override
     public boolean shouldDraw() {
-        return gp.gsm.getState() == GameState.START;
+        return gp.getGameState() == GameState.START;
     }
 
     @Override
     public boolean shouldUpdate() {
-        return gp.gsm.getState() == GameState.START;
+        return gp.getGameState() == GameState.START;
     }
 }

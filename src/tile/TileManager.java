@@ -14,7 +14,7 @@ public class TileManager {
     // Reference to main game panel
     GamePanel gp;
     // Array of all tiles loaded from tileset
-    public Tile[] tile;
+    private Tile[] tile;
 
     public TileManager(GamePanel gp){
         this.gp = gp;
@@ -33,10 +33,10 @@ public class TileManager {
             for (int y = 0; y < rows; y++) {
                 for (int x = 0; x < cols; x++) {
                     tile[index] = new Tile();
-                    tile[index].image = tileset.getSubimage(
+                    tile[index].setImage(tileset.getSubimage(
                         x * tileSize, y * tileSize, tileSize, tileSize
-                    );
-                    tile[index].collision = false;
+                    ));
+                    tile[index].setCollidable(false);
                     index++;
                 }
             }
@@ -65,7 +65,7 @@ public class TileManager {
                 }
                 if (line.contains("<property name=\"collision\"")) {
                     if (tileIndex >= 0 && tileIndex < tile.length) {
-                        tile[tileIndex].collision = line.contains("value=\"true\"");
+                        tile[tileIndex].setCollidable(line.contains("value=\"true\""));
                     }
                 }
             }
@@ -76,45 +76,37 @@ public class TileManager {
     }
 
     public void draw(Graphics2D g2 ,ChunkManager chunkM){
-        int playerPosX = gp.em.getPlayer().worldX;
-        int playerPosY = gp.em.getPlayer().worldY;
-
-        int screenLeft   = playerPosX - gp.em.getPlayer().screenX;
-        int screenTop    = playerPosY - gp.em.getPlayer().screenY;
-        int screenRight  = playerPosX + gp.em.getPlayer().screenX + 5*gp.tileSize;
-        int screenBottom = playerPosY + gp.em.getPlayer().screenY + 5*gp.tileSize;
+        var player = gp.getEntityManager().getPlayer();
+        int screenLeft   = gp.getCamera().visibleLeft(player, 0);
+        int screenTop    = gp.getCamera().visibleTop(player, 0);
+        int screenRight  = gp.getCamera().visibleRight(player, 5 * gp.tileSize);
+        int screenBottom = gp.getCamera().visibleBottom(player, 5 * gp.tileSize);
 
         for(Chunk c : chunkM.getActiveChunks()){
-            int chunkWorldX = c.chunkX * c.size * gp.tileSize;
-            int chunkWorldY = c.chunkY * c.size * gp.tileSize;
+            int chunkWorldX = c.getChunkX() * c.getSize() * gp.tileSize;
+            int chunkWorldY = c.getChunkY() * c.getSize() * gp.tileSize;
 
             // Skip chunks outside the screen
-            if(chunkWorldX + c.size*gp.tileSize < screenLeft) continue;
+            if(chunkWorldX + c.getSize()*gp.tileSize < screenLeft) continue;
             if(chunkWorldX > screenRight) continue;
-            if(chunkWorldY + c.size*gp.tileSize < screenTop) continue;
+            if(chunkWorldY + c.getSize()*gp.tileSize < screenTop) continue;
             if(chunkWorldY > screenBottom) continue;
 
             // Draw each tile in the chunk
-            for(int row=0; row<c.size; row++){
-                for(int col=0; col<c.size; col++){
-                    int tileNum = c.mapTileNum[row][col]; // take tile num from chunk
+            for(int row=0; row<c.getSize(); row++){
+                for(int col=0; col<c.getSize(); col++){
+                    int tileNum = c.getTileNum(row, col); // take tile num from chunk
                     if (tileNum < 0 || tileNum >= tile.length) continue;
 
                     int tileWorldX = chunkWorldX + col*gp.tileSize;
                     int tileWorldY = chunkWorldY + row*gp.tileSize;
-                    int tileScreenX = tileWorldX - playerPosX + gp.em.getPlayer().screenX;
-                    int tileScreenY = tileWorldY - playerPosY + gp.em.getPlayer().screenY;
+                    int tileScreenX = gp.getCamera().screenX(tileWorldX, player);
+                    int tileScreenY = gp.getCamera().screenY(tileWorldY, player);
 
-                    g2.drawImage(tile[tileNum].image, tileScreenX, tileScreenY, gp.tileSize, gp.tileSize, null);
+                    g2.drawImage(tile[tileNum].getImage(), tileScreenX, tileScreenY, gp.tileSize, gp.tileSize, null);
                 }
             }
 
-            // draw red outline to recognize each chunk
-//            g2.setColor(Color.RED);
-//            int rectX = chunkWorldX - playerPosX + gp.em.getPlayer().screenX;
-//            int rectY = chunkWorldY - playerPosY + gp.em.getPlayer().screenY;
-//            int rectSize = c.size * gp.tileSize;
-//            g2.drawRect(rectX, rectY, rectSize, rectSize);
         }
     }
     public boolean isCollisionAtWorld(int worldX, int worldY, ChunkManager chunkM) {
@@ -125,7 +117,11 @@ public class TileManager {
             return false;
         }
 
-        return tile[tileNum].collision;  // dùng cờ collision của Tile[]
+        return tile[tileNum].isCollidable();  // dùng cờ collision của Tile[]
+    }
+
+    public boolean isTileCollidable(int tileNum) {
+        return tileNum >= 0 && tileNum < tile.length && tile[tileNum].isCollidable();
     }
 
 }

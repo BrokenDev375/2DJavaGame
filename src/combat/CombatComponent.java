@@ -5,89 +5,155 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CombatComponent {
+    private int windupFrames = 6;
+    private int activeFrames = 6;
+    private int recoverFrames = 10;
+    private int cooldownFrames = 12;
 
-    // frame phase
-    private int windupFrames   = 6;   // lấy đà
-    private int activeFrames   = 6;   // thời gian bật hitbox
-    private int recoverFrames  = 10;  // hạ tay
-    private int cooldownFrames = 12;  // hồi chiêu sau khi kết thúc đòn
-
-    // --- knockback config
     private int knockbackForce = 0;
 
-    // --- hitbox size default
-    private int attackWidth  = 36;
+    private int attackWidth = 36;
     private int attackHeight = 36;
 
-    // phase status
-    private boolean isAttacking = false;
-    private int attackPhase = 0;           // 0: idle, 1: windup, 2: active, 3: recover
-    private int phaseTimerFrames = 0;      // bộ đếm cho phase hiện tại
-    private int cooldownCounterFrames = 0; // bộ đếm hồi chiêu
+    private boolean attacking = false;
+    private int attackPhase = 0;
+    private int phaseTimerFrames = 0;
+    private int cooldownCounterFrames = 0;
 
-    // --- Attack hitbox
     private final Rectangle attackBox = new Rectangle();
-
     private final Set<Object> hitThisSwing = new HashSet<>();
 
-    // ================== API ==================
-
-    // set size
     public void setAttackBoxSize(int width, int height) {
-        this.attackWidth  = Math.max(1, width);
+        this.attackWidth = Math.max(1, width);
         this.attackHeight = Math.max(1, height);
         this.attackBox.setSize(this.attackWidth, this.attackHeight);
     }
 
-    // hit-once-per-swing
-    public boolean wasHitThisSwing(Object target) { return hitThisSwing.contains(target); }
-    public void    markHit(Object target)         { if (target != null) hitThisSwing.add(target); }
-    public void    clearHitThisSwing()            { hitThisSwing.clear(); }
+    public boolean wasHitThisSwing(Object target) {
+        return hitThisSwing.contains(target);
+    }
 
-    // Set frames
+    public void markHit(Object target) {
+        if (target != null) hitThisSwing.add(target);
+    }
+
+    public void clearHitThisSwing() {
+        hitThisSwing.clear();
+    }
+
     public void setTimingFrames(int windup, int active, int recover, int cooldown) {
-        this.windupFrames   = Math.max(0, windup);
-        this.activeFrames   = Math.max(0, active);
-        this.recoverFrames  = Math.max(0, recover);
+        this.windupFrames = Math.max(0, windup);
+        this.activeFrames = Math.max(0, active);
+        this.recoverFrames = Math.max(0, recover);
         this.cooldownFrames = Math.max(0, cooldown);
     }
 
-    public int  getKnockbackForce()         { return knockbackForce; }
-    public void setKnockbackForce(int kb)   { this.knockbackForce = Math.max(0, kb); }
+    public int getKnockbackForce() {
+        return knockbackForce;
+    }
 
-    // ================== API truy cập trạng thái ==================
-    public boolean  isAttacking()            { return isAttacking; }
-    public boolean  isAttackActive()         { return isAttacking && attackPhase == 2; }
-    public int      getAttackPhase()         { return attackPhase; }
-    public Rectangle getAttackBox()          { return attackBox; }
+    public void setKnockbackForce(int force) {
+        this.knockbackForce = Math.max(0, force);
+    }
 
-    // ================== Package-access cho CombatSystem/AttackPhaseSystem ==================
-    int  getWindupFrames()               { return windupFrames; }
-    int  getActiveFrames()               { return activeFrames; }
-    int  getRecoverFrames()              { return recoverFrames; }
-    int  getCooldownFrames()             { return cooldownFrames; }
-    int  getAttackWidth()                { return attackWidth; }
-    int  getAttackHeight()               { return attackHeight; }
+    public boolean isAttacking() {
+        return attacking;
+    }
 
-    boolean getIsAttacking()             { return isAttacking; }
-    void    setIsAttacking(boolean v)    { isAttacking = v; }
+    public boolean isAttackActive() {
+        return attacking && attackPhase == 2;
+    }
 
-    int  getAttackPhaseInternal()        { return attackPhase; }
-    void setAttackPhaseInternal(int v)   { attackPhase = v; }
+    public int getAttackPhase() {
+        return attackPhase;
+    }
 
-    int  getPhaseTimerFrames()           { return phaseTimerFrames; }
-    void setPhaseTimerFrames(int v)      { phaseTimerFrames = v; }
+    public boolean isAttackBoxActive() {
+        return attackBox.width > 0 && attackBox.height > 0;
+    }
 
-    int  getCooldownCounterFrames()      { return cooldownCounterFrames; }
-    void setCooldownCounterFrames(int v) { cooldownCounterFrames = v; }
+    public boolean attackIntersects(Rectangle targetBody) {
+        return targetBody != null && isAttackBoxActive() && attackBox.intersects(targetBody);
+    }
+
+    int getWindupFrames() {
+        return windupFrames;
+    }
+
+    int getActiveFrames() {
+        return activeFrames;
+    }
+
+    int getRecoverFrames() {
+        return recoverFrames;
+    }
+
+    int getCooldownFrames() {
+        return cooldownFrames;
+    }
+
+    int getAttackWidth() {
+        return attackWidth;
+    }
+
+    int getAttackHeight() {
+        return attackHeight;
+    }
+
+    void placeAttackBox(int x, int y) {
+        attackBox.setBounds(x, y, attackWidth, attackHeight);
+    }
+
+    void clearAttackBox() {
+        attackBox.setBounds(0, 0, 0, 0);
+    }
+
+    boolean getIsAttacking() {
+        return attacking;
+    }
+
+    void setIsAttacking(boolean value) {
+        attacking = value;
+    }
+
+    int getAttackPhaseInternal() {
+        return attackPhase;
+    }
+
+    void setAttackPhaseInternal(int value) {
+        attackPhase = value;
+    }
+
+    int getPhaseTimerFrames() {
+        return phaseTimerFrames;
+    }
+
+    void setPhaseTimerFrames(int value) {
+        phaseTimerFrames = value;
+    }
+
+    int getCooldownCounterFrames() {
+        return cooldownCounterFrames;
+    }
+
+    void setCooldownCounterFrames(int value) {
+        cooldownCounterFrames = value;
+    }
 
     @SuppressWarnings("Unused")
-    public static void setCooldown(CombatComponent cc, int frames) {
-        cc.setCooldownCounterFrames(Math.max(0, frames));
+    public static void setCooldown(CombatComponent component, int frames) {
+        component.setCooldownCounterFrames(Math.max(0, frames));
     }
-    public static int getCooldown(CombatComponent cc) {
-        return cc.getCooldownCounterFrames();
+
+    public static int getCooldown(CombatComponent component) {
+        return component.getCooldownCounterFrames();
     }
-    public static int attackWidth(CombatComponent cc)  { return cc.getAttackWidth(); }
-    public static int attackHeight(CombatComponent cc) { return cc.getAttackHeight(); }
+
+    public static int attackWidth(CombatComponent component) {
+        return component.getAttackWidth();
+    }
+
+    public static int attackHeight(CombatComponent component) {
+        return component.getAttackHeight();
+    }
 }

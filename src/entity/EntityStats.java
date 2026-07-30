@@ -6,7 +6,7 @@ final class EntityStats {
     private int atk = 1;
     private int def = 0;
 
-    void set(int maxHp, int atk, int def) {
+    void configure(int maxHp, int atk, int def) {
         this.maxHp = Math.max(1, maxHp);
         this.hp = this.maxHp;
         this.atk = Math.max(0, atk);

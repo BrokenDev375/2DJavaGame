@@ -24,13 +24,13 @@ public class ObjectInteract {
 
     public void handle(int index) {
         if (index == CollisionChecker.NO_HIT) {
-            player.setInteracting(false);
+            player.endInteraction();
             return;
         }
 
         Optional<WorldObject> touchedObject = gp.getObjectManager().objectAt(gp.getCurrentMap(), index);
         if (touchedObject.isEmpty()) {
-            player.setInteracting(false);
+            player.endInteraction();
             return;
         }
 

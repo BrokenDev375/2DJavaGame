@@ -2,8 +2,8 @@ package monster_data;
 
 import ai.movement.AggroSwitchMovement;
 import ai.movement.ChaseMovement;
+import ai.movement.MovementController;
 import ai.movement.WanderMovement;
-import combat.CombatSystem;
 import entity.Direction;
 import entity.Entity;
 import main.GamePanel;
@@ -15,35 +15,37 @@ import java.util.function.Supplier;
 
 public class BatMonster extends Monster {
 
-    private final int wanderSpeed = 2;
+    private static final int WANDER_SPEED = 2;
 
     public BatMonster(GamePanel gp, int mapIndex) {
-        super(gp);
-        setMapIndex(mapIndex);
+        super(gp, createMovementController(gp));
+        placeOnMap(mapIndex);
 
-        setName("Bat");
-        setSize(gp.tileSize, gp.tileSize);
-        setHasAttackAnimation(false);
+        identifyAs("Bat");
+        resizeTo(gp.tileSize(), gp.tileSize());
 
         getImage();
 
-        setCollidable(true);
-        setAnimationOn(true);
-        useMovementSpeed(wanderSpeed);
+        enableCollision();
+        enableAnimation();
+        useMovementSpeed(WANDER_SPEED);
 
-        setSolidArea(new Rectangle(12, 12, getWidth() - 24, getHeight() - 20));
+        defineSolidArea(new Rectangle(12, 12, getWidth() - 24, getHeight() - 20));
 
-        setStats(20, 5, 3);
-        setExpReward(5);
+        configureStats(20, 5, 3);
+        configureExpReward(5);
         attackDamage = 3;
         attackKnockback = 6;
 
         configureAttackBox(28, 24);
         configureAttackTiming(3, 18, 42, 30);
 
+    }
+
+    private static MovementController createMovementController(GamePanel gp) {
         var wander = new WanderMovement(2, 240);
         Supplier<Player> playerSup = () -> (gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null);
-        var chase = new ChaseMovement(playerSup, 2, gp.tileSize);
+        var chase = new ChaseMovement(playerSup, 2, gp.tileSize());
 
         Predicate<Entity> aggroCond = me -> {
             Player p = playerSup.get();
@@ -51,30 +53,30 @@ public class BatMonster extends Monster {
             long dx = (long) p.getWorldX() - me.getWorldX();
             long dy = (long) p.getWorldY() - me.getWorldY();
             long dist2 = dx * dx + dy * dy;
-            long r = 1L * gp.tileSize * 6;
+            long r = 1L * gp.tileSize() * 6;
             return dist2 < r * r;
         };
 
-        setController(new AggroSwitchMovement(wander, chase, aggroCond));
+        return new AggroSwitchMovement(wander, chase, aggroCond);
     }
 
     private void getImage() {
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.UP,
                 setup("/monster/bat_down_1", getWidth(), getHeight()),
                 setup("/monster/bat_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.DOWN,
                 setup("/monster/bat_down_1", getWidth(), getHeight()),
                 setup("/monster/bat_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.LEFT,
                 setup("/monster/bat_down_1", getWidth(), getHeight()),
                 setup("/monster/bat_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.RIGHT,
                 setup("/monster/bat_down_1", getWidth(), getHeight()),
                 setup("/monster/bat_down_2", getWidth(), getHeight())
@@ -87,7 +89,7 @@ public class BatMonster extends Monster {
         if (isAttackActive()) {
             useMovementSpeed(3);
         } else {
-            useMovementSpeed(wanderSpeed);
+            useMovementSpeed(WANDER_SPEED);
         }
         super.update();
     }

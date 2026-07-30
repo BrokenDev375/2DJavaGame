@@ -16,7 +16,7 @@ public final class MonsterSpawnTable {
 
     public List<MonsterSpawnPlan> defaultPlans() {
         List<MonsterSpawnPlan> plans = new ArrayList<>();
-        int tileSize = gp.tileSize;
+        int tileSize = gp.tileSize();
         MapSpawnValidator validator = new MapSpawnValidator(gp);
 
         try {

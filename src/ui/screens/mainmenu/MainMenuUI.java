@@ -29,11 +29,11 @@ public class MainMenuUI extends BaseUI {
         boardImg = LoadSave.GetSpriteAtlas(LoadSave.MENU_BACKGROUND);
         bgImg    = LoadSave.GetSpriteAtlas(LoadSave.BACKGROUND_MENU);
 
-        float scale = gp.tileSize / 48f;
+        float scale = gp.tileSize() / 48f;
         bgW = Math.round(boardImg.getWidth() * scale);
         bgH = Math.round(boardImg.getHeight() * scale);
-        bgX = gp.screenWidth  / 2 - bgW / 2;
-        bgY = gp.screenHeight / 2 - bgH / 2;
+        bgX = gp.screenWidth()  / 2 - bgW / 2;
+        bgY = gp.screenHeight() / 2 - bgH / 2;
     }
     // Load atlas chứa 4 hàng nút, mỗi hàng gồm 3 trạng thái (default, hover, pressed)
     private void initButtons() {
@@ -62,7 +62,7 @@ public class MainMenuUI extends BaseUI {
     @Override
     public void draw(Graphics2D g2) {
         // Vẽ background
-        g2.drawImage(bgImg, 0, 0, gp.screenWidth, gp.screenHeight, null);
+        g2.drawImage(bgImg, 0, 0, gp.screenWidth(), gp.screenHeight(), null);
 
         // Màn hình Credits
         if (showingCredits) {
@@ -74,7 +74,7 @@ public class MainMenuUI extends BaseUI {
         // Vẽ các nút
         if (buttonImgs == null) return;
 
-        int centerX = gp.screenWidth / 2;
+        int centerX = gp.screenWidth() / 2;
         int startY  = bgY + Math.round(bgH * 0.3f);
         int spacing = Math.round(bgH * 0.17f);
 
@@ -92,11 +92,11 @@ public class MainMenuUI extends BaseUI {
     // UI Credits
     private void drawCreditsScreen(Graphics2D g2) {
         g2.setColor(new Color(0, 0, 0, 180));
-        g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
+        g2.fillRect(0, 0, gp.screenWidth(), gp.screenHeight());
 
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Arial", Font.BOLD, 24));
-        int centerY = gp.screenHeight / 2;
+        int centerY = gp.screenHeight() / 2;
 
         g2.drawString("Credits", 80, centerY - 60);
 

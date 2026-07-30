@@ -8,11 +8,11 @@ final class EntitySprites {
     private final EnumMap<Direction, SpriteFrames> attack = new EnumMap<>(Direction.class);
     private BufferedImage staticImage;
 
-    void setMoveSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+    void defineMoveSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
         movement.put(direction, new SpriteFrames(firstFrame, secondFrame));
     }
 
-    void setAttackSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+    void defineAttackSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
         attack.put(direction, new SpriteFrames(firstFrame, secondFrame));
     }
 
@@ -29,7 +29,7 @@ final class EntitySprites {
         return getSprite(attack, direction, firstFrame);
     }
 
-    void setStaticImage(BufferedImage image) {
+    void useStaticImage(BufferedImage image) {
         staticImage = image;
     }
 

@@ -57,7 +57,7 @@ final class EntityCollision {
         markCollision();
     }
 
-    void setSolidArea(Rectangle area) {
+    void defineSolidArea(Rectangle area) {
         if (area == null) {
             solidArea = null;
             solidAreaDefaultX = 0;

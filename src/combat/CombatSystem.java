@@ -55,7 +55,7 @@ public final class CombatSystem {
         return component.getKnockbackForce();
     }
 
-    public static void setKnockbackForce(CombatComponent component, int force) {
+    public static void configureKnockbackForce(CombatComponent component, int force) {
         component.setKnockbackForce(force);
     }
 

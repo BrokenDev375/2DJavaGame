@@ -10,7 +10,7 @@ public class Shop extends WorldObject {
         super(gp);
         setMapIndex(mapIndex);
         setName("shop");
-        setSize(gp.tileSize * 4, gp.tileSize * 4);
+        setSize(gp.tileSize() * 4, gp.tileSize() * 4);
         useStaticImage(setup("/object/shop", getWidth(), getHeight()));
         setCollidable(false);
         setSolidArea(new Rectangle(0, 0, getWidth(), getHeight()));

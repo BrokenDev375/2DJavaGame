@@ -59,16 +59,12 @@ public final class PlayerProgression {
     }
 
     public void reset() {
-        setLevel(1);
-        setExp(0);
+        restore(1, 0);
     }
 
-    public void setLevel(int level) {
+    public void restore(int level, int exp) {
         this.level = Math.max(1, level);
         this.expToNext = calcExpToNext(this.level);
-    }
-
-    public void setExp(int exp) {
         this.exp = Math.max(0, exp);
     }
 

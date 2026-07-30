@@ -6,7 +6,7 @@ final class DamageState {
     private int invulnCounter = 0;
     private Entity lastHitBy = null;
 
-    void setInvulnFrames(int frames) {
+    void configureInvulnerabilityFrames(int frames) {
         invulnFrames = Math.max(0, frames);
     }
 

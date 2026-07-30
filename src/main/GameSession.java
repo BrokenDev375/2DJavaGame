@@ -16,8 +16,6 @@ public final class GameSession {
     private final GameStateManager gameStateManager;
     private final UtilityTool utilityTool;
     private final IntFunction<Weapon> defaultWeaponFactory;
-    private final Runnable resetCollisionChecker;
-    private final Runnable resetInteractionRouter;
 
     private int currentMap = 0;
     private int frameCounter = 0;
@@ -29,9 +27,7 @@ public final class GameSession {
             UIManager uiManager,
             GameStateManager gameStateManager,
             UtilityTool utilityTool,
-            IntFunction<Weapon> defaultWeaponFactory,
-            Runnable resetCollisionChecker,
-            Runnable resetInteractionRouter
+            IntFunction<Weapon> defaultWeaponFactory
     ) {
         this.chunkManager = chunkManager;
         this.entityManager = entityManager;
@@ -40,12 +36,10 @@ public final class GameSession {
         this.gameStateManager = gameStateManager;
         this.utilityTool = utilityTool;
         this.defaultWeaponFactory = defaultWeaponFactory;
-        this.resetCollisionChecker = resetCollisionChecker;
-        this.resetInteractionRouter = resetInteractionRouter;
     }
 
     public void setupGame() {
-        entityManager.getPlayer().setDefaultValues();
+        entityManager.getPlayer().resetToDefaults();
         chunkManager.loadMap("map3");
         gameStateManager.setState(GameState.START);
     }
@@ -53,17 +47,14 @@ public final class GameSession {
     public void restartGame() {
         setCurrentMap(3);
         chunkManager.loadMap("map3");
-        entityManager.getPlayer().setDefaultValues();
+        entityManager.getPlayer().resetToDefaults();
         entityManager.getPlayer().refillHP();
-        entityManager.getPlayer().setMapIndex(getCurrentMap());
-        entityManager.getPlayer().setLevel(1);
-        entityManager.getPlayer().setExp(0);
+        entityManager.getPlayer().placeOnMap(getCurrentMap());
+        entityManager.getPlayer().resetProgression();
 
         Weapon defaultWeapon = defaultWeaponFactory.apply(getCurrentMap());
         entityManager.getPlayer().equipWeapon(defaultWeapon);
         objectManager.reloadMapObjects(getCurrentMap());
-        resetCollisionChecker.run();
-        resetInteractionRouter.run();
         entityManager.update(getCurrentMap());
         gameStateManager.setState(GameState.PLAY);
     }
@@ -95,7 +86,7 @@ public final class GameSession {
         return currentMap;
     }
 
-    public void setCurrentMap(int currentMap) {
+    void setCurrentMap(int currentMap) {
         this.currentMap = currentMap;
     }
 

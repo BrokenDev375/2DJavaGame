@@ -1,5 +1,6 @@
 package monster_data;
 
+import ai.movement.MovementController;
 import entity.Direction;
 import entity.Entity;
 import main.DebugLog;
@@ -21,14 +22,18 @@ public abstract class Monster extends Entity {
     private int homeX, homeY;
 
     public Monster(GamePanel gp) {
-        super(gp);
+        this(gp, null);
+    }
 
-        configureAttackBox(gp.tileSize, gp.tileSize * 3 / 2);
+    protected Monster(GamePanel gp, MovementController movementController) {
+        super(gp, movementController);
+
+        configureAttackBox(gp.tileSize(), gp.tileSize() * 3 / 2);
         configureAttackTiming(8, 6, 10, 30);
-        this.attackTriggerRadius = Math.max(gp.tileSize, 48);
+        this.attackTriggerRadius = Math.max(gp.tileSize(), 48);
         this.faceLockThreshold = 6;
-        this.atkW = gp.tileSize;
-        this.atkH = gp.tileSize * 3 / 2;
+        this.atkW = gp.tileSize();
+        this.atkH = gp.tileSize() * 3 / 2;
         configureAttackBox(atkW, atkH);
     }
 
@@ -36,11 +41,11 @@ public abstract class Monster extends Entity {
         return expReward;
     }
 
-    public void setExpReward(int expReward) {
+    protected void configureExpReward(int expReward) {
         this.expReward = Math.max(0, expReward);
     }
 
-    public void setLootDropPolicy(LootDropPolicy lootDropPolicy) {
+    public void useLootDropPolicy(LootDropPolicy lootDropPolicy) {
         this.lootDropPolicy = Objects.requireNonNull(lootDropPolicy, "lootDropPolicy");
     }
 
@@ -68,7 +73,7 @@ public abstract class Monster extends Entity {
         }
     }
 
-    public void setHome(int x, int y) {
+    public void rememberHomePosition(int x, int y) {
         this.homeX = x;
         this.homeY = y;
     }
@@ -87,8 +92,8 @@ public abstract class Monster extends Entity {
         Player player = gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null;
         if (player == null || player.isDead()) return;
 
-        int reachWidth = atkW > 0 ? atkW : gp.tileSize;
-        int reachHeight = atkH > 0 ? atkH : gp.tileSize;
+        int reachWidth = atkW > 0 ? atkW : gp.tileSize();
+        int reachHeight = atkH > 0 ? atkH : gp.tileSize();
         if (attackPlanner.canReachTarget(this, getDirection(), player, reachWidth, reachHeight)) {
             tryStartAttackOn(player);
         }

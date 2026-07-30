@@ -50,11 +50,16 @@ public class Entity implements CombatContext, WorldBody {
     private final CombatComponent combat;
 
     // --- Movement Controller (AI / input strategy) ---
-    private MovementController controller;
+    private final MovementController controller;
     private boolean hasAttackAnimation = false;
 
     public Entity(GamePanel gp) {
+        this(gp, null);
+    }
+
+    protected Entity(GamePanel gp, MovementController controller) {
         this.gp = gp;
+        this.controller = controller;
 
         this.emo = new EntityMovement(gp);
         this.esm = new EntitySpriteManager(gp.getAssetLoader());
@@ -62,15 +67,6 @@ public class Entity implements CombatContext, WorldBody {
 
         this.combat = new CombatComponent();
         this.attackDir = this.direction;  // init mặc định
-    }
-
-    // -------- controller ----------
-    public void setController(MovementController c) {
-        this.controller = c;
-    }
-
-    public MovementController getController() {
-        return controller;
     }
 
     private void applyMovementIntent(MovementIntent intent) {
@@ -110,7 +106,7 @@ public class Entity implements CombatContext, WorldBody {
         this.actualSpeed = 0;
     }
 
-    public void setDefaultMovementSpeed(int speed) {
+    protected void configureDefaultMovementSpeed(int speed) {
         this.defaultSpeed = Math.max(0, speed);
     }
 
@@ -126,7 +122,7 @@ public class Entity implements CombatContext, WorldBody {
         return actualSpeed;
     }
 
-    public void setBuffSpeed(int speed) {
+    protected void configureBuffSpeed(int speed) {
         this.buffSpeed = Math.max(0, speed);
     }
 
@@ -139,18 +135,18 @@ public class Entity implements CombatContext, WorldBody {
     }
 
     public void moveTo(int x, int y) {
-        setWorldPosition(x, y);
+        relocateTo(x, y);
     }
 
     public void spawnAt(int x, int y) {
-        setWorldPosition(x, y);
+        relocateTo(x, y);
     }
 
     public void restorePosition(int x, int y) {
-        setWorldPosition(x, y);
+        relocateTo(x, y);
     }
 
-    private void setWorldPosition(int x, int y) {
+    private void relocateTo(int x, int y) {
         placement.moveTo(x, y);
     }
 
@@ -198,24 +194,24 @@ public class Entity implements CombatContext, WorldBody {
         return collidable;
     }
 
-    public void setCollidable(boolean collidable) {
-        this.collidable = collidable;
+    protected void enableCollision() {
+        this.collidable = true;
     }
 
     public boolean isAnimationOn() {
         return animationOn;
     }
 
-    public void setAnimationOn(boolean animationOn) {
-        this.animationOn = animationOn;
+    protected void enableAnimation() {
+        this.animationOn = true;
     }
 
     public boolean hasAttackAnimation() {
         return hasAttackAnimation;
     }
 
-    public void setHasAttackAnimation(boolean hasAttackAnimation) {
-        this.hasAttackAnimation = hasAttackAnimation;
+    protected void enableAttackAnimation() {
+        this.hasAttackAnimation = true;
     }
 
     protected void useSpriteProfile(EntitySpriteProfile profile) {
@@ -224,12 +220,12 @@ public class Entity implements CombatContext, WorldBody {
         }
     }
 
-    protected void setMoveSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
-        sprites.setMoveSprites(direction, firstFrame, secondFrame);
+    protected void defineMoveSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+        sprites.defineMoveSprites(direction, firstFrame, secondFrame);
     }
 
-    protected void setAttackSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
-        sprites.setAttackSprites(direction, firstFrame, secondFrame);
+    protected void defineAttackSprites(Direction direction, BufferedImage firstFrame, BufferedImage secondFrame) {
+        sprites.defineAttackSprites(direction, firstFrame, secondFrame);
     }
 
     protected void useMoveSpritesForAttack() {
@@ -244,8 +240,8 @@ public class Entity implements CombatContext, WorldBody {
         return sprites.getAttackSprite(direction, isFirstSpriteFrame());
     }
 
-    protected void setStaticImage(BufferedImage image) {
-        sprites.setStaticImage(image);
+    protected void useStaticImage(BufferedImage image) {
+        sprites.useStaticImage(image);
     }
 
     protected BufferedImage getStaticImage() {
@@ -305,8 +301,8 @@ public class Entity implements CombatContext, WorldBody {
         return CombatSystem.getKnockbackForce(combat);
     }
 
-    protected void setAttackKnockbackForce(int force) {
-        CombatSystem.setKnockbackForce(combat, force);
+    protected void configureAttackKnockbackForce(int force) {
+        CombatSystem.configureKnockbackForce(combat, force);
     }
 
     public Entity getLastHitBy() {
@@ -338,7 +334,7 @@ public class Entity implements CombatContext, WorldBody {
         return name;
     }
 
-    public void setName(String name) {
+    protected void identifyAs(String name) {
         this.name = name;
     }
 
@@ -346,16 +342,16 @@ public class Entity implements CombatContext, WorldBody {
         return placement.getMapIndex();
     }
 
-    public void setMapIndex(int mapIndex) {
-        placement.setMapIndex(mapIndex);
+    public void placeOnMap(int mapIndex) {
+        placement.placeOnMap(mapIndex);
     }
 
     public boolean isOnMap(int mapIndex) {
         return placement.isOnMap(mapIndex);
     }
 
-    public void setSize(int width, int height) {
-        size.set(width, height);
+    protected void resizeTo(int width, int height) {
+        size.resizeTo(width, height);
     }
 
     public int getWidth() {
@@ -366,8 +362,8 @@ public class Entity implements CombatContext, WorldBody {
         return size.getHeight();
     }
 
-    public void setSolidArea(Rectangle area) {
-        collisionState.setSolidArea(area);
+    protected void defineSolidArea(Rectangle area) {
+        collisionState.defineSolidArea(area);
     }
 
     public Rectangle getSolidAreaAt(int worldX, int worldY) {
@@ -379,8 +375,8 @@ public class Entity implements CombatContext, WorldBody {
     }
 
     // -------- stats ----------
-    public void setStats(int maxHp, int atk, int def) {
-        stats.set(maxHp, atk, def);
+    protected void configureStats(int maxHp, int atk, int def) {
+        stats.configure(maxHp, atk, def);
     }
 
     public int getHP() {
@@ -443,8 +439,8 @@ public class Entity implements CombatContext, WorldBody {
         return takeDamage(null, rawDamage, knockbackX, knockbackY);
     }
 
-    public void setInvulnFrames(int frames) {
-        damageState.setInvulnFrames(frames);
+    protected void configureInvulnerabilityFrames(int frames) {
+        damageState.configureInvulnerabilityFrames(frames);
     }
 
     @Override
@@ -472,8 +468,8 @@ public class Entity implements CombatContext, WorldBody {
         return knockbackState.isFinished();
     }
 
-    public void setKnockbackFrames(int f) {
-        knockbackState.setDurationFrames(f);
+    protected void configureKnockbackFrames(int frames) {
+        knockbackState.configureDurationFrames(frames);
     }
 
     public void tickKnockbackDuration() {

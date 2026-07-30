@@ -27,7 +27,7 @@ public class TileManager {
     public TileManager(GamePanel gp, AssetLoader assetLoader) {
         this.gp = Objects.requireNonNull(gp, "gp");
         this.assetLoader = Objects.requireNonNull(assetLoader, "assetLoader");
-        loadTileset("/maptiles/tileset", gp.originalTileSize);
+        loadTileset("/maptiles/tileset", gp.originalTileSize());
         loadTilesetProperties("/maptiles/tileset.tsx");
     }
 
@@ -104,16 +104,16 @@ public class TileManager {
         var player = gp.getEntityManager().getPlayer();
         int screenLeft = gp.getCamera().visibleLeft(player, 0);
         int screenTop = gp.getCamera().visibleTop(player, 0);
-        int screenRight = gp.getCamera().visibleRight(player, 5 * gp.tileSize);
-        int screenBottom = gp.getCamera().visibleBottom(player, 5 * gp.tileSize);
+        int screenRight = gp.getCamera().visibleRight(player, 5 * gp.tileSize());
+        int screenBottom = gp.getCamera().visibleBottom(player, 5 * gp.tileSize());
 
         for (Chunk c : chunkM.getActiveChunks()) {
-            int chunkWorldX = c.getChunkX() * c.getSize() * gp.tileSize;
-            int chunkWorldY = c.getChunkY() * c.getSize() * gp.tileSize;
+            int chunkWorldX = c.getChunkX() * c.getSize() * gp.tileSize();
+            int chunkWorldY = c.getChunkY() * c.getSize() * gp.tileSize();
 
-            if (chunkWorldX + c.getSize() * gp.tileSize < screenLeft) continue;
+            if (chunkWorldX + c.getSize() * gp.tileSize() < screenLeft) continue;
             if (chunkWorldX > screenRight) continue;
-            if (chunkWorldY + c.getSize() * gp.tileSize < screenTop) continue;
+            if (chunkWorldY + c.getSize() * gp.tileSize() < screenTop) continue;
             if (chunkWorldY > screenBottom) continue;
 
             for (int row = 0; row < c.getSize(); row++) {
@@ -121,12 +121,12 @@ public class TileManager {
                     int tileNum = c.getTileNum(row, col);
                     if (tileNum < 0 || tileNum >= tile.length) continue;
 
-                    int tileWorldX = chunkWorldX + col * gp.tileSize;
-                    int tileWorldY = chunkWorldY + row * gp.tileSize;
+                    int tileWorldX = chunkWorldX + col * gp.tileSize();
+                    int tileWorldY = chunkWorldY + row * gp.tileSize();
                     int tileScreenX = gp.getCamera().screenX(tileWorldX, player);
                     int tileScreenY = gp.getCamera().screenY(tileWorldY, player);
 
-                    g2.drawImage(tile[tileNum].getImage(), tileScreenX, tileScreenY, gp.tileSize, gp.tileSize, null);
+                    g2.drawImage(tile[tileNum].getImage(), tileScreenX, tileScreenY, gp.tileSize(), gp.tileSize(), null);
                 }
             }
         }

@@ -109,7 +109,7 @@ public final class EntityCoreSmokeTest {
         assertEquals(16, placement.getWorldY(), "world y");
 
         assertTrue(placement.isOnMap(0), "default map");
-        placement.setMapIndex(2);
+        placement.placeOnMap(2);
         assertFalse(placement.isOnMap(0), "old map");
         assertTrue(placement.isOnMap(2), "new map");
     }
@@ -118,7 +118,7 @@ public final class EntityCoreSmokeTest {
         DamageState damage = new DamageState();
 
         assertFalse(damage.isInvulnerable(), "starts vulnerable");
-        damage.setInvulnFrames(2);
+        damage.configureInvulnerabilityFrames(2);
         damage.startInvulnerability();
         assertTrue(damage.isInvulnerable(), "starts invulnerability");
 
@@ -137,7 +137,7 @@ public final class EntityCoreSmokeTest {
         KnockbackState knockback = new KnockbackState();
 
         assertFalse(knockback.isActive(), "starts inactive");
-        knockback.setDurationFrames(2);
+        knockback.configureDurationFrames(2);
         knockback.start(3, -4);
 
         assertTrue(knockback.isActive(), "starts knockback");
@@ -164,11 +164,11 @@ public final class EntityCoreSmokeTest {
         assertEquals(1, size.getWidth(), "default width");
         assertEquals(1, size.getHeight(), "default height");
 
-        size.set(0, -4);
+        size.resizeTo(0, -4);
         assertEquals(1, size.getWidth(), "clamped width");
         assertEquals(1, size.getHeight(), "clamped height");
 
-        size.set(32, 48);
+        size.resizeTo(32, 48);
         assertEquals(32, size.getWidth(), "custom width");
         assertEquals(48, size.getHeight(), "custom height");
     }
@@ -176,7 +176,7 @@ public final class EntityCoreSmokeTest {
     private static void entityStatsClampHealthAndDamage() {
         EntityStats stats = new EntityStats();
 
-        stats.set(20, 5, 2);
+        stats.configure(20, 5, 2);
         assertEquals(20, stats.hp(), "set fills health");
         assertEquals(20, stats.maxHp(), "max health");
         assertEquals(5, stats.attack(), "attack");
@@ -201,7 +201,7 @@ public final class EntityCoreSmokeTest {
 
     private static void collisionAreaUsesDefensiveCopies() {
         EntityCollision collision = new EntityCollision();
-        collision.setSolidArea(new Rectangle(4, 5, 10, 11));
+        collision.defineSolidArea(new Rectangle(4, 5, 10, 11));
 
         Rectangle local = collision.getSolidArea(99, 99);
         local.x = 100;
@@ -300,8 +300,7 @@ public final class EntityCoreSmokeTest {
         assertEquals(4, levelTwo.attack(), "level two attack");
         assertEquals(3, levelTwo.defense(), "level two defense");
 
-        progression.setLevel(3);
-        progression.setExp(-5);
+        progression.restore(3, -5);
         assertEquals(3, progression.level(), "set level clamps high value");
         assertEquals(0, progression.exp(), "set exp clamps negative");
         assertEquals(PlayerProgression.calcExpToNext(3), progression.expToNext(), "set level recalculates threshold");

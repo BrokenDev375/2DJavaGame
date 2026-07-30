@@ -36,7 +36,7 @@ public class NPCInteract {
 
     public void handle(int index) {
         if (index == CollisionChecker.NO_HIT) {
-            player.setInteracting(false);
+            player.endInteraction();
             return;
         }
 
@@ -53,7 +53,7 @@ public class NPCInteract {
                         npc,
                         gp
                 );
-                player.setInteracting(true);
+                player.beginInteraction();
             }
             return;
         }
@@ -66,7 +66,7 @@ public class NPCInteract {
             talkable.speak(gp);
             gp.setGameState(GameState.DIALOGUE);
             input.resetTalkKey();
-            player.setInteracting(true);
+            player.beginInteraction();
         }
     }
 }

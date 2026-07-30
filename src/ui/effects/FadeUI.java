@@ -38,7 +38,7 @@ public class FadeUI extends BaseUI {
     public void draw(Graphics2D g2){
         if(fading){
             g2.setColor(new Color(0,0,0,(int)(alpha*255)));
-            g2.fillRect(0,0,gp.screenWidth,gp.screenHeight);
+            g2.fillRect(0,0,gp.screenWidth(),gp.screenHeight());
         }
     }
 }

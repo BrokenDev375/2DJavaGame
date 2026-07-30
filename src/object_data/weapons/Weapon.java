@@ -15,8 +15,8 @@ public abstract class Weapon extends WorldObject {
         super(gp);
         setMapIndex(mapIndex);
         setCollidable(true);
-        setSize(gp.tileSize, gp.tileSize);
-        setSolidArea(new java.awt.Rectangle(8, 8, gp.tileSize - 16, gp.tileSize - 16));
+        setSize(gp.tileSize(), gp.tileSize());
+        setSolidArea(new java.awt.Rectangle(8, 8, gp.tileSize() - 16, gp.tileSize() - 16));
     }
 
     public abstract String spriteKey();
@@ -31,7 +31,7 @@ public abstract class Weapon extends WorldObject {
     public abstract int atkFlat();
 
     public void loadSprite() {
-        useStaticImage(setup("/object/" + spriteKey(), gp.tileSize, gp.tileSize));
+        useStaticImage(setup("/object/" + spriteKey(), gp.tileSize(), gp.tileSize()));
     }
 
     public int computeDamage(Player p, Entity target) {

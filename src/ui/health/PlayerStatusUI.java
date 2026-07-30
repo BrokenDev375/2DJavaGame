@@ -27,10 +27,10 @@ public class PlayerStatusUI extends BaseUI {
         int expToNext = p.getExpToNext();
 
         // ==== Vị trí panel ngay dưới thanh máu ====
-        int panelX = gp.tileSize / 2;
-        int panelY = gp.tileSize / 2 + gp.tileSize + 4;
-        int panelW = gp.tileSize * 5;
-        int panelH = gp.tileSize;
+        int panelX = gp.tileSize() / 2;
+        int panelY = gp.tileSize() / 2 + gp.tileSize() + 4;
+        int panelW = gp.tileSize() * 5;
+        int panelH = gp.tileSize();
 
         Color oldColor = g2.getColor();
         Font oldFont   = g2.getFont();

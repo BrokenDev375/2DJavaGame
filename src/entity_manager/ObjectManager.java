@@ -22,7 +22,7 @@ public class ObjectManager {
     private final Map<Integer, List<WorldObject>> objectsByMap = new HashMap<>();
 
     public ObjectManager(GamePanel gp) {
-        this(gp, gp.getWorldObjectFactory(), WorldObjectSpawnTable.defaultPlans(gp.tileSize));
+        this(gp, gp.getWorldObjectFactory(), WorldObjectSpawnTable.defaultPlans(gp.tileSize()));
     }
 
     public ObjectManager(GamePanel gp, WorldObjectFactory objectFactory, List<ObjectSpawnPlan> spawnPlans) {
@@ -91,7 +91,7 @@ public class ObjectManager {
         List<WorldObject> list = objectsOnMap(mapId);
 
         for (WorldObject o : list) {
-            if (!gp.getCamera().isVisible(o, player, gp.tileSize)) {
+            if (!gp.getCamera().isVisible(o, player, gp.tileSize())) {
                 continue;
             }
 

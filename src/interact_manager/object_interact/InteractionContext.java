@@ -43,7 +43,7 @@ public final class InteractionContext {
     }
 
     public int tileSize() {
-        return gp.tileSize;
+        return gp.tileSize();
     }
 
     public ObjectManager objectManager() {
@@ -83,7 +83,7 @@ public final class InteractionContext {
             gp.getChunkManager().loadMap(destination.mapPath());
             gp.setCurrentMap(destination.mapId());
             player.moveTo(destination.worldX(), destination.worldY());
-            player.setMapIndex(destination.mapId());
+            player.placeOnMap(destination.mapId());
             gp.getChunkManager().clearChunks();
             gp.getChunkManager().updateChunks(player.getWorldX(), player.getWorldY());
             showMessage(completeMessage);

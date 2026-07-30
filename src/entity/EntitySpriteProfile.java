@@ -43,14 +43,14 @@ public final class EntitySpriteProfile {
     void applyTo(EntitySprites sprites) {
         for (Map.Entry<Direction, SpriteFrames> entry : movement.entrySet()) {
             SpriteFrames frames = entry.getValue();
-            sprites.setMoveSprites(entry.getKey(), frames.first, frames.second);
+            sprites.defineMoveSprites(entry.getKey(), frames.first, frames.second);
         }
         for (Map.Entry<Direction, SpriteFrames> entry : attack.entrySet()) {
             SpriteFrames frames = entry.getValue();
-            sprites.setAttackSprites(entry.getKey(), frames.first, frames.second);
+            sprites.defineAttackSprites(entry.getKey(), frames.first, frames.second);
         }
         if (staticImage != null) {
-            sprites.setStaticImage(staticImage);
+            sprites.useStaticImage(staticImage);
         }
     }
 

@@ -6,7 +6,7 @@ import player_manager.Player;
 
 import java.util.function.Supplier;
 
-public class ChaseMovement implements MovementController {
+public final class ChaseMovement implements MovementController {
     private final Supplier<Player> targetSup;
     private final int moveSpeed;
     private final int stopRadius;

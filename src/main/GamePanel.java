@@ -16,7 +16,6 @@ import tile.ChunkManager;
 import tile.TileManager;
 import input_manager.InputController;
 import input_manager.InputManager;
-import interact_manager.Interact;
 import ui.health.HealthUI;
 import ui.health.MonsterHealthUI;
 import ui.base.UIManager;
@@ -30,22 +29,22 @@ import ui.screens.pause.PauseOverlay;
 import java.util.List;
 
 
-public class GamePanel extends JPanel implements WorldQuery, RenderContext {
+public final class GamePanel extends JPanel implements WorldQuery, RenderContext {
     private final GameConfig config = GameConfig.defaults();
 
     // ===== SCREEN SETTING =====
-    public final int originalTileSize = config.originalTileSize(); // 16x16 tile
-    final int scale = config.scale();
-    public final int tileSize = config.tileSize(); // 48x48 tile
-    public final int maxScreenCol = config.maxScreenCol(); // width
-    public final int maxScreenRow = config.maxScreenRow(); // height
-    public final int screenWidth = config.screenWidth();
-    public final int screenHeight = config.screenHeight();
+    private final int originalTileSize = config.originalTileSize();
+    private final int scale = config.scale();
+    private final int tileSize = config.tileSize();
+    private final int maxScreenCol = config.maxScreenCol();
+    private final int maxScreenRow = config.maxScreenRow();
+    private final int screenWidth = config.screenWidth();
+    private final int screenHeight = config.screenHeight();
 
     // ===== WORLD SETTING =====
-    public final int maxWorldCol = config.maxWorldCol();
-    public final int maxWorldRow = config.maxWorldRow();
-    public final int chunkSize = config.chunkSize();
+    private final int maxWorldCol = config.maxWorldCol();
+    private final int maxWorldRow = config.maxWorldRow();
+    private final int chunkSize = config.chunkSize();
 
     // ===== SYSTEM =====
     private final UtilityTool uTool = new UtilityTool();
@@ -59,19 +58,19 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
 
     // ===== OTHERS =====
     private final Camera camera = new Camera(config);
-    private CollisionChecker cChecker;
+    private final CollisionChecker cChecker;
     private final WeaponFactory weaponFactory = new WeaponFactory(this);
     private final WorldObjectFactory worldObjectFactory = new WorldObjectFactory(this, weaponFactory);
-    private Interact iR;
     // ===== ENTITY MANAGER =====
-    private EntityManager em;
+    private final EntityManager em;
     private final ObjectManager om = new ObjectManager(this);
-    private GameSession session;
-    private GameRenderer renderer;
+    private final GameSession session;
+    private final GameRenderer renderer;
+    private final GameLoop gameLoop;
 
     // ===== UI SYSTEM =====
     private final UIManager uiManager = new UIManager();
-    private PauseOverlay pauseOverlay;
+    private final PauseOverlay pauseOverlay;
     public static final float SCALE = 3f;
 
     // ===== MAP =====
@@ -81,7 +80,7 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
     private final GameStateManager gsm = new GameStateManager();
 
     // ===== THREAD =====
-    Thread gameThread;
+    private Thread gameThread;
 
     public GamePanel() {
         // Window setup
@@ -105,7 +104,7 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
 
         // Core managers
         em = new EntityManager(this, input.getKeyController());
-        resetCollisionChecker();
+        cChecker = new CollisionChecker(this);
         session = new GameSession(
                 chunkM,
                 em,
@@ -113,12 +112,10 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
                 uiManager,
                 gsm,
                 uTool,
-                mapIndex -> weaponFactory.create(WeaponType.SWORD, mapIndex),
-                this::resetCollisionChecker,
-                this::resetInteractionRouter
+                mapIndex -> weaponFactory.create(WeaponType.SWORD, mapIndex)
         );
         renderer = new GameRenderer(tileM, chunkM, om, em, uiManager, gsm, session);
-        resetInteractionRouter();
+        gameLoop = new GameLoop(this);
 
     }
 
@@ -136,8 +133,48 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
         return config;
     }
 
+    public int originalTileSize() {
+        return originalTileSize;
+    }
+
+    public int scale() {
+        return scale;
+    }
+
+    public int tileSize() {
+        return tileSize;
+    }
+
+    public int maxScreenCol() {
+        return maxScreenCol;
+    }
+
+    public int maxScreenRow() {
+        return maxScreenRow;
+    }
+
+    public int screenWidth() {
+        return screenWidth;
+    }
+
+    public int screenHeight() {
+        return screenHeight;
+    }
+
+    public int maxWorldCol() {
+        return maxWorldCol;
+    }
+
+    public int maxWorldRow() {
+        return maxWorldRow;
+    }
+
+    public int chunkSize() {
+        return chunkSize;
+    }
+
     public int getFrameCounter() {
-        return session == null ? 0 : session.getFrameCounter();
+        return session.getFrameCounter();
     }
 
     @Override
@@ -146,7 +183,7 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
     }
 
     public int getCurrentMap() {
-        return session == null ? 0 : session.getCurrentMap();
+        return session.getCurrentMap();
     }
 
     @Override
@@ -167,9 +204,7 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
     }
 
     public void setCurrentMap(int mapIndex) {
-        if (session != null) {
-            session.setCurrentMap(mapIndex);
-        }
+        session.setCurrentMap(mapIndex);
     }
 
     public CollisionChecker getCollisionChecker() {
@@ -237,7 +272,7 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
 
     @Override
     public Entity player() {
-        return em == null ? null : em.getPlayer();
+        return em.getPlayer();
     }
 
     @Override
@@ -250,23 +285,23 @@ public class GamePanel extends JPanel implements WorldQuery, RenderContext {
         return tileM.isTileCollidable(tileNum);
     }
 
-    private void resetCollisionChecker() {
-        cChecker = new CollisionChecker(this);
-    }
-
-    public void resetInteractionRouter() {
-        if (em != null && em.getPlayer() != null) {
-            iR = new Interact(this, em.getPlayer(), getInputController());
-        }
-    }
-
     public void restartGame() {
         session.restartGame();
     }
 
     public void startGameThread() {
-        gameThread = new Thread(new GameLoop(this));
+        if (gameThread != null && gameThread.isAlive()) {
+            return;
+        }
+        gameThread = new Thread(gameLoop, "2DJavaGame-Loop");
         gameThread.start();
+    }
+
+    public void stopGameThread() {
+        gameLoop.requestStop();
+        if (gameThread != null) {
+            gameThread.interrupt();
+        }
     }
 
     // ===== UPDATE LOOP =====

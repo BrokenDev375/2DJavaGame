@@ -14,7 +14,7 @@ final class KnockbackState {
         return counter <= 0;
     }
 
-    void setDurationFrames(int frames) {
+    void configureDurationFrames(int frames) {
         durationFrames = Math.max(1, frames);
     }
 

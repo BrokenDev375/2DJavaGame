@@ -1,19 +1,26 @@
 package main;
 
-public class GameLoop implements Runnable {
+public final class GameLoop implements Runnable {
+    private static final int FPS = 60;
+
     private final GamePanel gp;
-    private final int FPS = 60;
+    private volatile boolean running = false;
 
     public GameLoop(GamePanel gp) {
         this.gp = gp;
     }
 
+    public void requestStop() {
+        running = false;
+    }
+
     @Override
     public void run() {
+        running = true;
         double drawInterval = 1_000_000_000.0 / FPS;
         double nextDrawTime = System.nanoTime() + drawInterval;
 
-        while (true) {
+        while (running) {
             gp.update();
             gp.repaint();
 

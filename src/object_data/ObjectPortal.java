@@ -19,7 +19,7 @@ public class ObjectPortal extends WorldObject implements TeleportTarget {
         super(gp);
         setMapIndex(mapIndex);
         setName("portal");
-        setSize(gp.tileSize * 3 / 2, gp.tileSize * 3 / 2);
+        setSize(gp.tileSize() * 3 / 2, gp.tileSize() * 3 / 2);
 
         firstFrame = setup("/object/portal1", getWidth(), getHeight());
         secondFrame = setup("/object/portal2", getWidth(), getHeight());

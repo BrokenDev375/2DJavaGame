@@ -1,3 +1,7 @@
 GameProject.iml
 build/
 plan.md
+.agents/
+skills-lock.json
+ad
+how --oneline ORIG_HEAD

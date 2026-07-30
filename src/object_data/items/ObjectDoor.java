@@ -15,7 +15,7 @@ public class ObjectDoor extends WorldObject implements TeleportTarget {
         super(gp);
         setMapIndex(mapIndex);
         setName("door");
-        setSize(gp.tileSize, gp.tileSize);
+        setSize(gp.tileSize(), gp.tileSize());
         useStaticImage(setup("/object/door", getWidth(), getHeight()));
         setCollidable(false);
         setSolidArea(new Rectangle(2, 2, getWidth() - 4, getHeight() - 4));

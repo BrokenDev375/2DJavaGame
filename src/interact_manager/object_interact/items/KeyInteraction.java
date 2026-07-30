@@ -16,13 +16,13 @@ public class KeyInteraction implements IObjectInteraction {
             context.removeTouchedObject();
             context.showMessage("You got a key!");
 
-            context.player().setInteracting(false);
+            context.player().endInteraction();
             return;
         }
 
         if (!context.player().isInteracting()) {
             context.showMessage("Press 'F' to pick the mystery key. You may need it in the future");
-            context.player().setInteracting(true);
+            context.player().beginInteraction();
         }
     }
 }

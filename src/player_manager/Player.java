@@ -34,8 +34,8 @@ public class Player extends Entity {
         this.interactionRouter = new Interact(gp, this, input);
         this.inputController = input;
 
-        setSolidArea(new Rectangle(11, 16, 25, 25));
-        setDefaultValues();
+        defineSolidArea(new Rectangle(11, 16, 25, 25));
+        resetToDefaults();
 
         psm = new PlayerSpriteManager(gp.getConfig(), new EntitySpriteManager(gp.getAssetLoader()));
         useSpriteProfile(psm.loadSprites());
@@ -48,8 +48,12 @@ public class Player extends Entity {
         return currentWeapon == null ? null : currentWeapon.getName();
     }
 
-    public void setInteracting(boolean value) {
-        this.interacting = value;
+    public void beginInteraction() {
+        this.interacting = true;
+    }
+
+    public void endInteraction() {
+        this.interacting = false;
     }
 
     public boolean isInteracting() {
@@ -96,16 +100,16 @@ public class Player extends Entity {
         inputController.resetTalkKey();
     }
 
-    public void setDefaultValues() {
-        setSize(gp.tileSize, gp.tileSize);
-        setMapIndex(3);
-        spawnAt(gp.tileSize * 15, gp.tileSize * 22);
+    public void resetToDefaults() {
+        resizeTo(gp.tileSize(), gp.tileSize());
+        placeOnMap(3);
+        spawnAt(gp.tileSize() * 15, gp.tileSize() * 22);
 
-        setDefaultMovementSpeed(5);
-        setBuffSpeed(4);
+        configureDefaultMovementSpeed(5);
+        configureBuffSpeed(4);
         resetMovementSpeed();
         face(Direction.UP);
-        setAnimationOn(true);
+        enableAnimation();
     }
 
     public int getLevel() {
@@ -120,15 +124,18 @@ public class Player extends Entity {
         return progression.expToNext();
     }
 
-    public int setLevel(int level) {
-        progression.setLevel(level);
+    public void restoreProgression(int level, int exp) {
+        progression.restore(level, exp);
         applyProgressionStats();
-        return progression.level();
     }
 
-    public int setExp(int exp) {
-        progression.setExp(exp);
-        return progression.exp();
+    public void resetProgression() {
+        restoreProgression(1, 0);
+    }
+
+    public void restoreHealthStats(int maxHealth, int health) {
+        configureStats(maxHealth, getATK(), getDEF());
+        restoreHP(health);
     }
 
     public void collectKey() {
@@ -178,12 +185,12 @@ public class Player extends Entity {
             switch (getDirection()) {
                 case UP -> {
                     image = getAttackSprite(Direction.UP);
-                    tempScreenY -= gp.tileSize;
+                    tempScreenY -= gp.tileSize();
                 }
                 case DOWN -> image = getAttackSprite(Direction.DOWN);
                 case LEFT -> {
                     image = getAttackSprite(Direction.LEFT);
-                    tempScreenX -= gp.tileSize;
+                    tempScreenX -= gp.tileSize();
                 }
                 case RIGHT -> image = getAttackSprite(Direction.RIGHT);
                 default -> image = getMoveSprite(Direction.DOWN);
@@ -275,7 +282,7 @@ public class Player extends Entity {
 
     private void applyProgressionStats() {
         PlayerProgressionStats stats = progression.statsForCurrentLevel();
-        setStats(stats.maxHp(), stats.attack(), stats.defense());
+        configureStats(stats.maxHp(), stats.attack(), stats.defense());
     }
 
     private static int clamp(int value, int min, int max) {

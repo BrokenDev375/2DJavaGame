@@ -23,7 +23,6 @@ public final class GameRestorer {
 
         restorePlayer(gp, data, player);
         restoreMonsters(gp, data);
-        gp.resetInteractionRouter();
         return LoadResult.LOADED;
     }
 
@@ -31,10 +30,8 @@ public final class GameRestorer {
         PlayerData savedPlayer = data.getPlayer();
 
         player.restorePosition(savedPlayer.getWorldX(), savedPlayer.getWorldY());
-        player.setExp(savedPlayer.getExp());
-        player.setLevel(savedPlayer.getLevel());
-        player.setStats(savedPlayer.getMaxHealth(), player.getATK(), player.getDEF());
-        player.restoreHP(savedPlayer.getHealth());
+        player.restoreProgression(savedPlayer.getLevel(), savedPlayer.getExp());
+        player.restoreHealthStats(savedPlayer.getMaxHealth(), savedPlayer.getHealth());
 
         if (savedPlayer.getWeaponName() != null) {
             gp.getWeaponFactory()
@@ -43,7 +40,7 @@ public final class GameRestorer {
         }
 
         gp.setCurrentMap(savedPlayer.getMapIndex());
-        player.setMapIndex(gp.getCurrentMap());
+        player.placeOnMap(gp.getCurrentMap());
 
         String mapPath = data.getMapPath() == null ? "map" + gp.getCurrentMap() : data.getMapPath();
         gp.getChunkManager().loadMap(mapPath);

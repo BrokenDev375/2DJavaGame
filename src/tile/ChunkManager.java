@@ -104,7 +104,7 @@ public class ChunkManager {
     }
 
     public void updateChunks(int playerWorldX, int playerWorldY) {
-        int buffer = gp.tileSize * (chunkSize / 2);
+        int buffer = gp.tileSize() * (chunkSize / 2);
 
         var player = gp.getEntityManager().getPlayer();
         int screenLeft = gp.getCamera().visibleLeft(player, buffer);
@@ -112,14 +112,14 @@ public class ChunkManager {
         int screenTop = gp.getCamera().visibleTop(player, buffer);
         int screenBottom = gp.getCamera().visibleBottom(player, buffer);
 
-        int chunkLeft = screenLeft / (chunkSize * gp.tileSize);
-        int chunkRight = screenRight / (chunkSize * gp.tileSize);
-        int chunkTop = screenTop / (chunkSize * gp.tileSize);
-        int chunkBottom = screenBottom / (chunkSize * gp.tileSize);
+        int chunkLeft = screenLeft / (chunkSize * gp.tileSize());
+        int chunkRight = screenRight / (chunkSize * gp.tileSize());
+        int chunkTop = screenTop / (chunkSize * gp.tileSize());
+        int chunkBottom = screenBottom / (chunkSize * gp.tileSize());
 
         for (int cx = chunkLeft; cx <= chunkRight; cx++) {
             for (int cy = chunkTop; cy <= chunkBottom; cy++) {
-                if (cx < 0 || cy < 0 || cx >= gp.chunkSize || cy >= gp.chunkSize) {
+                if (cx < 0 || cy < 0 || cx >= gp.chunkSize() || cy >= gp.chunkSize()) {
                     continue;
                 }
                 loadChunkAsync(cx, cy, pathMap);
@@ -158,9 +158,9 @@ public class ChunkManager {
             chunks.clear();
         }
 
-        for (int cx = 0; cx < gp.chunkSize; cx++) {
-            for (int cy = 0; cy < gp.chunkSize; cy++) {
-                if (cx < 0 || cy < 0 || cx >= gp.chunkSize || cy >= gp.chunkSize) continue;
+        for (int cx = 0; cx < gp.chunkSize(); cx++) {
+            for (int cy = 0; cy < gp.chunkSize(); cy++) {
+                if (cx < 0 || cy < 0 || cx >= gp.chunkSize() || cy >= gp.chunkSize()) continue;
 
                 Optional<Chunk> chunk = loadChunkFromFile(cx, cy, pathMap);
                 if (chunk.isPresent()) {
@@ -181,8 +181,8 @@ public class ChunkManager {
 
     public int getTileNum(int tileCol, int tileRow) {
         if (tileCol < 0 || tileRow < 0
-                || tileCol >= gp.maxWorldCol
-                || tileRow >= gp.maxWorldRow) {
+                || tileCol >= gp.maxWorldCol()
+                || tileRow >= gp.maxWorldRow()) {
             return 0;
         }
 
@@ -200,8 +200,8 @@ public class ChunkManager {
     }
 
     public int getTileNumAtWorld(int worldX, int worldY) {
-        int tileCol = worldX / gp.tileSize;
-        int tileRow = worldY / gp.tileSize;
+        int tileCol = worldX / gp.tileSize();
+        int tileRow = worldY / gp.tileSize();
         return getTileNum(tileCol, tileRow);
     }
 }

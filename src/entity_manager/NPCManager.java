@@ -16,7 +16,7 @@ public class NPCManager {
     }
 
     private void spawnNPCs() {
-        int t = gp.tileSize;
+        int t = gp.tileSize();
         NPC_Oldman oldman0 = new NPC_Oldman(gp, 3);
         oldman0.spawnAt(10 * t, 20 * t);
         addNPC(oldman0);

@@ -2,6 +2,7 @@ package monster_data;
 
 import ai.movement.AggroSwitchMovement;
 import ai.movement.ChaseMovement;
+import ai.movement.MovementController;
 import ai.movement.WanderMovement;
 import entity.Direction;
 import entity.Entity;
@@ -15,34 +16,37 @@ import java.util.function.Supplier;
 
 public class OrcMonster extends Monster {
 
-    private final int wanderSpeed = 1;
+    private static final int WANDER_SPEED = 1;
 
     public OrcMonster(GamePanel gp, int mapIndex) {
-        super(gp);
-        setMapIndex(mapIndex);
+        super(gp, createMovementController(gp));
+        placeOnMap(mapIndex);
 
-        setName("Orc");
-        setSize(gp.tileSize, gp.tileSize);
-        setHasAttackAnimation(true);
+        identifyAs("Orc");
+        resizeTo(gp.tileSize(), gp.tileSize());
+        enableAttackAnimation();
 
         getImage();
 
-        setCollidable(true);
-        setAnimationOn(true);
-        useMovementSpeed(wanderSpeed);
+        enableCollision();
+        enableAnimation();
+        useMovementSpeed(WANDER_SPEED);
 
-        setSolidArea(new Rectangle(6, 20, 36, 28));
+        defineSolidArea(new Rectangle(6, 20, 36, 28));
 
-        setStats(40, 8, 5);
+        configureStats(40, 8, 5);
         this.attackKnockback = 8;
-        setExpReward(5);
+        configureExpReward(5);
 
         configureAttackBox(40, 32);
         configureAttackTiming(12, 10, 16, 82);
 
+    }
+
+    private static MovementController createMovementController(GamePanel gp) {
         var wander = new WanderMovement(2, 240);
         Supplier<Player> playerSup = () -> (gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null);
-        var chase = new ChaseMovement(playerSup, 2, gp.tileSize);
+        var chase = new ChaseMovement(playerSup, 2, gp.tileSize());
 
         Predicate<Entity> aggroCond = me -> {
             Player p = playerSup.get();
@@ -50,33 +54,33 @@ public class OrcMonster extends Monster {
             long dx = (long) p.getWorldX() - me.getWorldX();
             long dy = (long) p.getWorldY() - me.getWorldY();
             long dist2 = dx * dx + dy * dy;
-            long r = 1L * gp.tileSize * 6;
+            long r = 1L * gp.tileSize() * 6;
             return dist2 < r * r;
         };
 
-        setController(new AggroSwitchMovement(wander, chase, aggroCond));
+        return new AggroSwitchMovement(wander, chase, aggroCond);
     }
 
     private void getImage() {
         int w = getWidth();
         int h = getHeight();
 
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.UP,
                 setup("/monster/orc_up_1", w, h),
                 setup("/monster/orc_up_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.DOWN,
                 setup("/monster/orc_down_1", w, h),
                 setup("/monster/orc_down_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.LEFT,
                 setup("/monster/orc_left_1", w, h),
                 setup("/monster/orc_left_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.RIGHT,
                 setup("/monster/orc_right_1", w, h),
                 setup("/monster/orc_right_2", w, h)
@@ -91,22 +95,22 @@ public class OrcMonster extends Monster {
         BufferedImage atkRight1 = setup("/monster/orc_attack_right_1", w, h);
         BufferedImage atkRight2 = setup("/monster/orc_attack_right_2", w, h);
 
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.UP,
                 gp.getUtilityTool().scaleImage(atkUp1, w, h * 2),
                 gp.getUtilityTool().scaleImage(atkUp2, w, h * 2)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.DOWN,
                 gp.getUtilityTool().scaleImage(atkDown1, w, h * 2),
                 gp.getUtilityTool().scaleImage(atkDown2, w, h * 2)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.LEFT,
                 gp.getUtilityTool().scaleImage(atkLeft1, w * 2, h),
                 gp.getUtilityTool().scaleImage(atkLeft2, w * 2, h)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.RIGHT,
                 gp.getUtilityTool().scaleImage(atkRight1, w * 2, h),
                 gp.getUtilityTool().scaleImage(atkRight2, w * 2, h)

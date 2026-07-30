@@ -10,48 +10,46 @@ import java.awt.Rectangle;
 public class NPC_Oldman extends Entity implements Talkable {
 
     public NPC_Oldman(GamePanel gp, int mapIndex){
-        super(gp);
-        setMapIndex(mapIndex);
-        setName("oldman");
+        super(gp, new WanderMovement(1, 120));
+        placeOnMap(mapIndex);
+        identifyAs("oldman");
 
-        setSize(gp.tileSize, gp.tileSize);
+        resizeTo(gp.tileSize(), gp.tileSize());
         getImage();
 
-        setCollidable(true);
-        setAnimationOn(true);
+        enableCollision();
+        enableAnimation();
         useMovementSpeed(1);
 
-        setSolidArea(new Rectangle(3, 18, 42, 30));
+        defineSolidArea(new Rectangle(3, 18, 42, 30));
 
-        setController(new WanderMovement(1, 120));
-
-        setDialogue();
+        defineDialogue();
     }
 
     private void getImage(){
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.UP,
                 setup("/npc/oldman_up_1" , getWidth() , getHeight()),
                 setup("/npc/oldman_up_2" , getWidth() , getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.DOWN,
                 setup("/npc/oldman_down_1" , getWidth() , getHeight()),
                 setup("/npc/oldman_down_2" , getWidth() , getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.RIGHT,
                 setup("/npc/oldman_right_1", getWidth() , getHeight()),
                 setup("/npc/oldman_right_2" , getWidth() , getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.LEFT,
                 setup("/npc/oldman_left_1" , getWidth() , getHeight()),
                 setup("/npc/oldman_left_2" , getWidth() , getHeight())
         );
     }
 
-    public void setDialogue() {
+    private void defineDialogue() {
         defineDialogueLine(0, 0, "Today, you finally turn 15... which means you're allowed to enter the Dungeon for the first time.\n");
         defineDialogueLine(0, 1, "I know you're excited - eager to earn your own money and explore the world out there.");
         defineDialogueLine(0, 2, "But remember, the Dungeon isn't just treasures... it's filled with monsters and danger.");

@@ -22,80 +22,79 @@ public class SkeletonLord extends Monster {
     private BufferedImage p2AtkUp1, p2AtkUp2, p2AtkDown1, p2AtkDown2, p2AtkLeft1, p2AtkLeft2, p2AtkRight1, p2AtkRight2;
 
     public SkeletonLord(GamePanel gp, int mapIndex) {
-        super(gp);
-        setMapIndex(mapIndex);
+        super(gp, new WanderMovement(BASE_SPEED, 120));
+        placeOnMap(mapIndex);
 
-        setName("Skeleton Lord");
-        setSize(gp.tileSize * 2, gp.tileSize * 2);
-        setHasAttackAnimation(true);
+        identifyAs("Skeleton Lord");
+        resizeTo(gp.tileSize() * 2, gp.tileSize() * 2);
+        enableAttackAnimation();
 
-        setCollidable(true);
-        setAnimationOn(true);
+        enableCollision();
+        enableAnimation();
 
-        setDefaultMovementSpeed(BASE_SPEED);
+        configureDefaultMovementSpeed(BASE_SPEED);
         resetMovementSpeed();
 
-        setSolidArea(new Rectangle(28, 32, 36, 60));
+        defineSolidArea(new Rectangle(28, 32, 36, 60));
 
-        setStats(220, 15, 10);
+        configureStats(220, 15, 10);
         attackKnockback = 8;
-        setExpReward(100);
+        configureExpReward(100);
 
-        atkW = gp.tileSize * 2;
-        atkH = gp.tileSize * 2;
+        atkW = gp.tileSize() * 2;
+        atkH = gp.tileSize() * 2;
         configureAttackBox(atkW, atkH);
         configureAttackTiming(3, 18, 39, 30);
 
-        attackTriggerRadius = Math.max(gp.tileSize * 6, 48);
+        attackTriggerRadius = Math.max(gp.tileSize() * 6, 48);
         faceLockThreshold = 6;
 
         face(Direction.DOWN);
 
         loadPhaseSprites();
-        setController(new WanderMovement(BASE_SPEED, 120));
     }
 
     private void loadPhaseSprites() {
         int w = getWidth();
         int h = getHeight();
 
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.UP,
                 setup(SPRITE_DIR + "skeletonlord_up_1", w, h),
                 setup(SPRITE_DIR + "skeletonlord_up_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.DOWN,
                 setup(SPRITE_DIR + "skeletonlord_down_1", w, h),
                 setup(SPRITE_DIR + "skeletonlord_down_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.LEFT,
                 setup(SPRITE_DIR + "skeletonlord_left_1", w, h),
                 setup(SPRITE_DIR + "skeletonlord_left_2", w, h)
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.RIGHT,
                 setup(SPRITE_DIR + "skeletonlord_right_1", w, h),
                 setup(SPRITE_DIR + "skeletonlord_right_2", w, h)
         );
 
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.UP,
                 setup(SPRITE_DIR + "skeletonlord_attack_up_1", w, h * 2),
                 setup(SPRITE_DIR + "skeletonlord_attack_up_2", w, h * 2)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.DOWN,
                 setup(SPRITE_DIR + "skeletonlord_attack_down_1", w, h * 2),
                 setup(SPRITE_DIR + "skeletonlord_attack_down_2", w, h * 2)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.LEFT,
                 setup(SPRITE_DIR + "skeletonlord_attack_left_1", w * 2, h),
                 setup(SPRITE_DIR + "skeletonlord_attack_left_2", w * 2, h)
         );
-        setAttackSprites(
+        defineAttackSprites(
                 Direction.RIGHT,
                 setup(SPRITE_DIR + "skeletonlord_attack_right_1", w * 2, h),
                 setup(SPRITE_DIR + "skeletonlord_attack_right_2", w * 2, h)
@@ -121,15 +120,15 @@ public class SkeletonLord extends Monster {
     }
 
     private void switchToPhase2Sprites() {
-        setMoveSprites(Direction.UP, p2Up1, p2Up2);
-        setMoveSprites(Direction.DOWN, p2Down1, p2Down2);
-        setMoveSprites(Direction.LEFT, p2Left1, p2Left2);
-        setMoveSprites(Direction.RIGHT, p2Right1, p2Right2);
+        defineMoveSprites(Direction.UP, p2Up1, p2Up2);
+        defineMoveSprites(Direction.DOWN, p2Down1, p2Down2);
+        defineMoveSprites(Direction.LEFT, p2Left1, p2Left2);
+        defineMoveSprites(Direction.RIGHT, p2Right1, p2Right2);
 
-        setAttackSprites(Direction.UP, p2AtkUp1, p2AtkUp2);
-        setAttackSprites(Direction.DOWN, p2AtkDown1, p2AtkDown2);
-        setAttackSprites(Direction.LEFT, p2AtkLeft1, p2AtkLeft2);
-        setAttackSprites(Direction.RIGHT, p2AtkRight1, p2AtkRight2);
+        defineAttackSprites(Direction.UP, p2AtkUp1, p2AtkUp2);
+        defineAttackSprites(Direction.DOWN, p2AtkDown1, p2AtkDown2);
+        defineAttackSprites(Direction.LEFT, p2AtkLeft1, p2AtkLeft2);
+        defineAttackSprites(Direction.RIGHT, p2AtkRight1, p2AtkRight2);
     }
 
     @Override
@@ -150,10 +149,10 @@ public class SkeletonLord extends Monster {
         if (!enraged && hpPct <= ENRAGE_THRESHOLD_PCT) {
             enraged = true;
 
-            setDefaultMovementSpeed(ENRAGE_SPEED);
+            configureDefaultMovementSpeed(ENRAGE_SPEED);
             resetMovementSpeed();
-            atkW = gp.tileSize * 3;
-            atkH = gp.tileSize * 2;
+            atkW = gp.tileSize() * 3;
+            atkH = gp.tileSize() * 2;
             configureAttackBox(atkW, atkH);
             configureAttackTiming(6, 8, 10, 36);
             switchToPhase2Sprites();

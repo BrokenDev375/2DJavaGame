@@ -58,7 +58,7 @@ public class MonsterManager {
         monster.spawnAt(slot.plan.worldX(), slot.plan.worldY());
 
         if (monster instanceof monster_data.Monster typedMonster) {
-            typedMonster.setHome(slot.plan.worldX(), slot.plan.worldY());
+            typedMonster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
         }
 
         monstersOnMap(slot.plan.mapId()).add(monster);
@@ -147,7 +147,7 @@ public class MonsterManager {
     private boolean isFarFromPlayer(int x, int y, int playerX, int playerY) {
         int dx = x - playerX;
         int dy = y - playerY;
-        int safeRadius = gp.tileSize * 5;
+        int safeRadius = gp.tileSize() * 5;
         return dx * dx + dy * dy > safeRadius * safeRadius;
     }
 

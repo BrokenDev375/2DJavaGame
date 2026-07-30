@@ -27,7 +27,7 @@ final class MapPlacement {
         return mapIndex;
     }
 
-    void setMapIndex(int mapIndex) {
+    void placeOnMap(int mapIndex) {
         this.mapIndex = mapIndex;
     }
 

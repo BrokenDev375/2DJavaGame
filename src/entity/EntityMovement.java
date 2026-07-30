@@ -1,16 +1,17 @@
 package entity;
 
-import main.GamePanel;
+import main.CollisionChecker;
+import main.WorldQuery;
 import object_data.WorldObject;
 import player_manager.Player;
 
 import java.util.List;
 
 public class EntityMovement {
-    private final GamePanel gp;
+    private final WorldQuery world;
 
-    public EntityMovement(GamePanel gp) {
-        this.gp = gp;
+    public EntityMovement(WorldQuery world) {
+        this.world = world;
     }
 
     public void moveByDirection(Entity entity) {
@@ -25,16 +26,16 @@ public class EntityMovement {
         int nextX = entity.getWorldX() + dx;
         int nextY = entity.getWorldY() + dy;
 
-        gp.getCollisionChecker().checkTile(entity, nextX, nextY);
+        world.collisionChecker().checkTile(entity, nextX, nextY);
 
-        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
-        int objectIndex = gp.getCollisionChecker().checkWorldObject(entity, objects, dx, dy);
-        if (objectIndex != 999) {
+        List<WorldObject> objects = world.objectsOnMap(world.currentMap());
+        int objectIndex = world.collisionChecker().checkWorldObject(entity, objects, dx, dy);
+        if (objectIndex != CollisionChecker.NO_HIT) {
             WorldObject object = objects.get(objectIndex);
             if (object != null && object.isCollidable()) entity.markCollision();
         }
 
-        gp.getCollisionChecker().checkPlayer(entity, nextX, nextY);
+        world.collisionChecker().checkPlayer(entity, nextX, nextY);
 
         if (entity.canMove()) {
             entity.moveBy(dx, dy);
@@ -77,17 +78,17 @@ public class EntityMovement {
         int nextX = entity.getWorldX() + dx;
         int nextY = entity.getWorldY() + dy;
 
-        gp.getCollisionChecker().checkTile(entity, nextX, nextY);
+        world.collisionChecker().checkTile(entity, nextX, nextY);
 
-        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
-        int objectIndex = gp.getCollisionChecker().checkWorldObject(entity, objects, dx, dy);
-        if (objectIndex != 999) {
+        List<WorldObject> objects = world.objectsOnMap(world.currentMap());
+        int objectIndex = world.collisionChecker().checkWorldObject(entity, objects, dx, dy);
+        if (objectIndex != CollisionChecker.NO_HIT) {
             WorldObject object = objects.get(objectIndex);
             if (object != null && object.isCollidable()) entity.markCollision();
         }
 
         if (!(entity instanceof Player)) {
-            gp.getCollisionChecker().checkPlayer(entity, nextX, nextY);
+            world.collisionChecker().checkPlayer(entity, nextX, nextY);
         }
 
         return !entity.canMove();

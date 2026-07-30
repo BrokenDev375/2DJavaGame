@@ -8,51 +8,49 @@ import java.awt.Rectangle;
 
 public class RedSlimeMonster extends Monster {
 
-    private final int wanderSpeed = 2;
+    private static final int WANDER_SPEED = 2;
 
     public RedSlimeMonster(GamePanel gp, int mapIndex) {
-        super(gp);
-        setMapIndex(mapIndex);
+        super(gp, new WanderMovement(1, 240));
+        placeOnMap(mapIndex);
 
-        setName("RedSlime");
-        setSize(gp.tileSize, gp.tileSize);
-        setHasAttackAnimation(false);
+        identifyAs("RedSlime");
+        resizeTo(gp.tileSize(), gp.tileSize());
 
         getImage();
 
-        setCollidable(true);
-        setAnimationOn(true);
-        useMovementSpeed(wanderSpeed);
+        enableCollision();
+        enableAnimation();
+        useMovementSpeed(WANDER_SPEED);
 
-        setSolidArea(new Rectangle(10, 18, getWidth() - 20, getHeight() - 22));
+        defineSolidArea(new Rectangle(10, 18, getWidth() - 20, getHeight() - 22));
 
-        setStats(12, 3, 1);
-        attackDamage = 4;
+        configureStats(12, 3, 1);
+        configureAttackDamage(4);
         attackKnockback = 5;
 
         configureAttackBox(30, 26);
         configureAttackTiming(20, 6, 16, 40);
 
-        setController(new WanderMovement(1, 240));
     }
 
     private void getImage() {
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.UP,
                 setup("/monster/redslime_down_1", getWidth(), getHeight()),
                 setup("/monster/redslime_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.DOWN,
                 setup("/monster/redslime_down_1", getWidth(), getHeight()),
                 setup("/monster/redslime_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.LEFT,
                 setup("/monster/redslime_down_1", getWidth(), getHeight()),
                 setup("/monster/redslime_down_2", getWidth(), getHeight())
         );
-        setMoveSprites(
+        defineMoveSprites(
                 Direction.RIGHT,
                 setup("/monster/redslime_down_1", getWidth(), getHeight()),
                 setup("/monster/redslime_down_2", getWidth(), getHeight())

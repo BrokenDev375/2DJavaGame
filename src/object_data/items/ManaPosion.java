@@ -11,11 +11,11 @@ public class ManaPosion extends WorldObject {
         super(gp);
         setMapIndex(mapIndex);
         setName("manaposion");
-        setSize(gp.tileSize, gp.tileSize);
-        setStaticImage(setup("/object/manaposion", getWidth(), getHeight()));
+        setSize(gp.tileSize(), gp.tileSize());
+        useStaticImage(setup("/object/manaposion", getWidth(), getHeight()));
         setCollidable(false);
 
-        int t = gp.tileSize / 8;
+        int t = gp.tileSize() / 8;
         setSolidArea(new Rectangle(-t / 2, -t / 2, getWidth() + t, getHeight() + t));
     }
 }

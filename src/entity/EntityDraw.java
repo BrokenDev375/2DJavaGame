@@ -1,33 +1,33 @@
 package entity;
 
 import combat.CombatSystem;
-import main.GamePanel;
+import main.RenderContext;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
 public class EntityDraw {
-    private final GamePanel gp;
+    private final RenderContext render;
 
-    public EntityDraw(GamePanel gp) {
-        this.gp = gp;
+    public EntityDraw(RenderContext render) {
+        this.render = render;
     }
 
     public void draw(Graphics2D g2, Entity e) {
-        if (gp.getEntityManager() == null || gp.getEntityManager().getPlayer() == null) {
+        var player = render.player();
+        if (player == null) {
             return;
         }
 
-        var player = gp.getEntityManager().getPlayer();
+        final int screenX = render.camera().screenX(e, player);
+        final int screenY = render.camera().screenY(e, player);
+        final int tileSize = render.getConfig().tileSize();
 
-        final int screenX = gp.getCamera().screenX(e, player);
-        final int screenY = gp.getCamera().screenY(e, player);
-
-        if (!gp.getCamera().isVisible(e, player, gp.tileSize)) return;
+        if (!render.camera().isVisible(e, player, tileSize)) return;
 
         boolean skipSprite = false;
         if (e.isInvulnerable()) {
-            int fc = gp.getFrameCounter();
+            int fc = render.frameCounter();
             skipSprite = ((fc / 6) % 2 != 0);
         }
 
@@ -46,8 +46,8 @@ public class EntityDraw {
         int tempX = screenX;
         int tempY = screenY;
 
-        final int offUp15 = (2 * gp.tileSize) / 3;
-        final int offLeft = gp.tileSize;
+        final int offUp15 = (2 * tileSize) / 3;
+        final int offLeft = tileSize;
 
         if (attacking && e.hasAttackAnimation()) {
             if (dirForAnim == Direction.UP)   tempY -= offUp15;

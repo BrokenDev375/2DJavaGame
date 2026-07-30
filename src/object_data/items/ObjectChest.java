@@ -13,8 +13,8 @@ public class ObjectChest extends WorldObject {
         super(gp);
         setMapIndex(mapIndex);
         setName("chest");
-        setSize(gp.tileSize, gp.tileSize);
-        setStaticImage(setup("/object/chest", getWidth(), getHeight()));
+        setSize(gp.tileSize(), gp.tileSize());
+        useStaticImage(setup("/object/chest", getWidth(), getHeight()));
         setCollidable(true);
         setSolidArea(new Rectangle(2, 4, getWidth() - 4, getHeight() - 8));
     }
@@ -22,7 +22,7 @@ public class ObjectChest extends WorldObject {
     public void open() {
         if (opened) return;
         opened = true;
-        // setStaticImage(setup("/object/chest_open", getWidth(), getHeight()));
+        // useStaticImage(setup("/object/chest_open", getWidth(), getHeight()));
     }
 
     public boolean isOpened() {

@@ -19,9 +19,9 @@ public class HealthUI extends BaseUI {
         int cur = gp.getEntityManager().getPlayer().getHP();
 
         // Kích thước và vị trí của thanh máu
-        int barWidth = gp.tileSize * 4;
-        int barHeight = gp.tileSize / 2;
-        int x = gp.tileSize / 2, y = gp.tileSize / 2;
+        int barWidth = gp.tileSize() * 4;
+        int barHeight = gp.tileSize() / 2;
+        int x = gp.tileSize() / 2, y = gp.tileSize() / 2;
 
         // Nền thanh máu
         g2.setColor(Color.gray);

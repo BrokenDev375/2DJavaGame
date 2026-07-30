@@ -3,60 +3,61 @@ package player_manager;
 import combat.CombatSystem;
 import entity.Direction;
 import entity.Entity;
-import interact_manager.Interact;
+import entity.EntitySpriteManager;
 import input_manager.InputController;
-import main.GamePanel;
-import main.GameState;
+import interact_manager.Interact;
 import main.DebugLog;
-import ui.effects.MessageUI;
+import main.GamePanel;
+import object_data.weapons.Weapon;
 
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import object_data.weapons.Weapon;
 
 public class Player extends Entity {
     private Weapon currentWeapon;
+    private int keyCount = 0;
+    int speedTimer = 0;
+
+    private final PlayerProgression progression = new PlayerProgression();
+    private final PlayerCombatInput combatInput = new PlayerCombatInput();
+
+    private final Interact interactionRouter;
+    private final InputController inputController;
+    private final PlayerSpriteManager psm;
+    private final PlayerMovement pm;
+
+    private boolean interacting = false;
+
+    public Player(GamePanel gp, InputController input) {
+        super(gp);
+        this.interactionRouter = new Interact(gp, this, input);
+        this.inputController = input;
+
+        defineSolidArea(new Rectangle(11, 16, 25, 25));
+        resetToDefaults();
+
+        psm = new PlayerSpriteManager(gp.getConfig(), new EntitySpriteManager(gp.getAssetLoader()));
+        useSpriteProfile(psm.loadSprites());
+        pm = new PlayerMovement(this, gp);
+
+        applyProgressionStats();
+    }
 
     public String equippedWeaponName() {
         return currentWeapon == null ? null : currentWeapon.getName();
     }
 
-    private int keyCount = 0;
-    int speedTimer = 0;
+    public int attackPower() {
+        return currentWeapon == null ? Math.max(1, getATK()) : currentWeapon.attackPower(this);
+    }
 
-    // --- Level / EXP ---
-    private int level = 1;
-    private int exp = 0;
-    private int expToNext = 10;
+    public void beginInteraction() {
+        this.interacting = true;
+    }
 
-    // Base stats + tăng mỗi level
-    private int baseHp = 15;
-    private int baseAtk = 3;
-    private int baseDef = 2;
-
-    private int hpPerLevel = 3;
-    private int atkPerLevel = 1;
-    private int defPerLevel = 1;
-
-    // UI
-    private MessageUI msgUI;
-
-    // managers
-    private final Interact interactionRouter;
-    private final InputController inputController;
-    private final PlayerSpriteManager psm;
-    private final PlayerMovement pm;
-    private final PlayerAnimation pa;
-
-    // combat input
-    private int attackBtnLock = 0; // chống spam phím
-
-    // --- Interaction debounce (avoid F-key spamming) ---
-    private boolean interacting = false;
-
-    public void setInteracting(boolean value) {
-        this.interacting = value;
+    public void endInteraction() {
+        this.interacting = false;
     }
 
     public boolean isInteracting() {
@@ -103,66 +104,51 @@ public class Player extends Entity {
         inputController.resetTalkKey();
     }
 
-    public Player(GamePanel gp, InputController input) {
-        super(gp);
-        this.interactionRouter = new Interact(gp, this, input);
-        this.inputController = input;
-        this.msgUI = gp.getUiManager().get(MessageUI.class);
+    public void resetToDefaults() {
+        resizeTo(gp.tileSize(), gp.tileSize());
+        placeOnMap(3);
+        spawnAt(gp.tileSize() * 15, gp.tileSize() * 22);
+        restoreKeyCount(0);
 
-        // default collision hitbox
-        setSolidArea(new Rectangle(11, 16, 25, 25));
-
-        setDefaultValues();
-
-        // Managers
-        psm = new PlayerSpriteManager(gp);
-        psm.loadSprites(this);
-        pm = new PlayerMovement(this, gp);
-        pa = new PlayerAnimation(this);
-
-        // ---- Combat config (dựa trên level)
-        recalcStatsFromLevel();
-    }
-
-    public void setDefaultValues() {
-        setSize(gp.tileSize, gp.tileSize);
-        setMapIndex(3); // rất quan trọng
-
-        // Ví dụ spawn trước cửa map3
-        spawnAt(gp.tileSize * 15, gp.tileSize * 22);
-
-        setDefaultMovementSpeed(5);
-        setBuffSpeed(4);
+        configureDefaultMovementSpeed(5);
+        configureBuffSpeed(4);
         resetMovementSpeed();
         face(Direction.UP);
-        setAnimationOn(true);
+        enableAnimation();
     }
 
     public int getLevel() {
-        return level;
+        return progression.level();
     }
 
     public int getExp() {
-        return exp;
+        return progression.exp();
     }
 
     public int getExpToNext() {
-        return expToNext;
+        return progression.expToNext();
     }
 
-    public int setLevel(int level) {
-        this.level = level;
-        recalcStatsFromLevel();
-        return level;
+    public void restoreProgression(int level, int exp) {
+        progression.restore(level, exp);
+        applyProgressionStats();
     }
 
-    public int setExp(int exp) {
-        this.exp = exp;
-        return exp;
+    public void resetProgression() {
+        restoreProgression(1, 0);
+    }
+
+    public void restoreHealthStats(int maxHealth, int health) {
+        configureStats(maxHealth, getATK(), getDEF());
+        restoreHP(health);
     }
 
     public void collectKey() {
         keyCount++;
+    }
+
+    public void restoreKeyCount(int keyCount) {
+        this.keyCount = Math.max(0, keyCount);
     }
 
     public int getKeyCount() {
@@ -171,33 +157,24 @@ public class Player extends Entity {
 
     @Override
     public void update() {
-        // === ĐANG BỊ KNOCKBACK → chỉ đẩy & tick hệ thống, bỏ qua input ===
         if (isKnockbackActive()) {
             applyKnockbackMovement();
             CombatSystem.tick(this);
-            pa.update(
-                    false,
-                    isAttacking(),
-                    getAttackPhase()
-            );
+            updateSpriteFrame(false, isAttacking());
             return;
         }
 
         PlayerMoveIntent moveIntent = pm.calculateMovement();
         pm.move(moveIntent);
 
-        pa.update(
-                moveIntent.isMoving(),
-                isAttacking(),
-                getAttackPhase()
-        );
+        updateSpriteFrame(moveIntent.isMoving(), isAttacking());
 
         if (speedTimer > 0) speedTimer--;
         if (speedTimer == 0) resetMovementSpeed();
 
         handleAttackInput();
         CombatSystem.tick(this);
-        handleNPCInteraction();
+        interactionRouter.updateNPCProximity();
     }
 
     @Override
@@ -208,27 +185,24 @@ public class Player extends Entity {
             if (!visible) return;
         }
 
-        BufferedImage image = null;
+        BufferedImage image;
         int tempScreenX = gp.getCamera().anchorX();
         int tempScreenY = gp.getCamera().anchorY();
 
         boolean attacking = isAttacking();
         if (attacking) {
             switch (getDirection()) {
-                case UP:
+                case UP -> {
                     image = getAttackSprite(Direction.UP);
-                    tempScreenY -= gp.tileSize;
-                    break;
-                case DOWN:
-                    image = getAttackSprite(Direction.DOWN);
-                    break;
-                case LEFT:
+                    tempScreenY -= gp.tileSize();
+                }
+                case DOWN -> image = getAttackSprite(Direction.DOWN);
+                case LEFT -> {
                     image = getAttackSprite(Direction.LEFT);
-                    tempScreenX -= gp.tileSize;
-                    break;
-                case RIGHT:
-                    image = getAttackSprite(Direction.RIGHT);
-                    break;
+                    tempScreenX -= gp.tileSize();
+                }
+                case RIGHT -> image = getAttackSprite(Direction.RIGHT);
+                default -> image = getMoveSprite(Direction.DOWN);
             }
         } else {
             image = getMoveSprite(getDirection());
@@ -239,19 +213,29 @@ public class Player extends Entity {
         if (image == null) return;
 
         g2.drawImage(image, tempScreenX, tempScreenY, null);
-
     }
 
     private void handleAttackInput() {
-        if (attackBtnLock > 0) attackBtnLock--;
-
-        if (isAttackPressed() && attackBtnLock == 0) {
-            attackBtnLock = 6; // ~0.1s @60fps
-            if (canStartAttack()) {
-                startAttack();
-                DebugLog.info("Combat started");
-            }
+        if (combatInput.shouldStartAttack(isAttackPressed(), canStartAttack())) {
+            startAttack();
+            DebugLog.info("Combat started");
         }
+    }
+
+    public int[] attackKnockbackVector() {
+        final int defaultForce = 3;
+        final int maxForce = 3;
+        int baseForce = getAttackKnockbackForce() > 0 ? getAttackKnockbackForce() : defaultForce;
+        int scaled = (int) Math.round(baseForce * (1.0 + Math.min(Math.max(0, getATK()), 50) * 0.01));
+
+        Direction direction = getDirection() == null ? Direction.RIGHT : getDirection();
+        int knockbackX = direction.scaledDx(scaled);
+        int knockbackY = direction.scaledDy(scaled);
+
+        return new int[]{
+                clamp(knockbackX, -maxForce, maxForce),
+                clamp(knockbackY, -maxForce, maxForce)
+        };
     }
 
     public void equipWeapon(Weapon weapon) {
@@ -265,137 +249,52 @@ public class Player extends Entity {
                 weapon.atkBoxW(), weapon.atkBoxH()
         );
 
-        psm.loadAttackSprites(this, weapon.spriteKey());
+        useSpriteProfile(psm.loadAttackSprites(weapon.spriteKey()));
     }
 
-    private void handleNPCInteraction() {
-        // Tìm NPC đang chạm player
-        int npcIndex = gp.getCollisionChecker().checkEntity(this, gp.getEntityManager().getNPCs(gp.getCurrentMap()), getWorldX(), getWorldY());
-
-        // Không chạm NPC nào -> reset interacting để lần sau lại gần vẫn hiện hint
-        if (npcIndex == 999) {
-            setInteracting(false);
-            return;
+    public PlayerProgressionResult gainExp(int amount) {
+        if (amount <= 0) {
+            return progression.gainExp(0);
         }
 
-        // Lấy NPC
-        Entity npc = gp.getEntityManager().getNPCs(gp.getCurrentMap()).get(npcIndex);
-        if (npc == null) return;
-
-        if (gp.getGameState() != GameState.PLAY) return;
-
-        // LẠI GẦN NHƯNG CHƯA BẤM E -> HIỆN HINT
-        if (!isTalkPressed()) {
-            if (msgUI == null && gp.getUiManager() != null) {
-                msgUI = gp.getUiManager().get(MessageUI.class);
-            }
-            // Chỉ hint cho ông nội + tránh spam bằng isInteracting()
-            if (msgUI != null && "oldman".equalsIgnoreCase(npc.getName()) && !isInteracting()) {
-                msgUI.showTouchMessage(
-                        "Press 'E' to talk to your grandpa.",
-                        npc,   // MessageUI bám theo vị trí ông nội
-                        gp
-                );
-                setInteracting(true);
-            }
-            // chưa bấm E thì chỉ hint, không mở thoại
-            return;
-        }
-
-        // BẤM E -> MỞ ĐỐI THOẠI
-
-        // Nếu DialogueUI đang mở sẵn thì bỏ qua
-        ui.effects.DialogueUI dialogue = gp.getUiManager().get(ui.effects.DialogueUI.class);
-        if (dialogue != null && dialogue.isActive()) return;
-
-        npc.facePlayer();
-        npc.speak(gp);
-        gp.setGameState(GameState.DIALOGUE);
-    }
-
-    // count stats with level (không còn rank)
-    private void recalcStatsFromLevel() {
-        int hp = baseHp + (level - 1) * hpPerLevel;
-        int atk = baseAtk + (level - 1) * atkPerLevel;
-        int def = baseDef + (level - 1) * defPerLevel;
-
-        // dùng setStats của Entity
-        setStats(hp, atk, def);
-    }
-
-    // exp to next level
-    private int calcExpToNext(int lv) {
-        // ví dụ: 10 * 1.2^(lv-1)
-        double base = 10.0;
-        return (int) Math.round(base * Math.pow(1.2, lv - 1));
-    }
-
-    /**
-     * Player nhận thêm EXP khi giết quái
-     */
-    public void gainExp(int amount) {
-        if (amount <= 0) return;
-
-        int beforeExp = exp;
-        int beforeLevel = level;
+        int beforeExp = progression.exp();
+        int beforeExpToNext = progression.expToNext();
+        int beforeLevel = progression.level();
 
         DebugLog.info(
                 "[EXP] gainExp +" + amount +
-                        " | trước: exp=" + beforeExp + "/" + expToNext +
+                        " | before: exp=" + beforeExp + "/" + beforeExpToNext +
                         " lv=" + beforeLevel
         );
 
-        this.exp += amount;
-
-        // Lên nhiều level nếu exp dư
-        while (exp >= expToNext) {
-            exp -= expToNext;
-            levelUp();  // trong levelUp cũng sẽ in debug + hiện thông báo
+        PlayerProgressionResult result = progression.gainExp(amount);
+        if (result.leveledUp()) {
+            applyProgressionStats();
+            refillHP();
         }
 
         DebugLog.info(
-                "[EXP] sau gainExp: exp=" + exp + "/" + expToNext +
-                        " lv=" + level
+                "[EXP] after gainExp: exp=" + progression.exp() + "/" + progression.expToNext() +
+                        " lv=" + progression.level()
         );
+        return result;
     }
 
-    private void levelUp() {
-        level++;
-        expToNext = calcExpToNext(level);
-
-        recalcStatsFromLevel();   // cập nhật HP/ATK/DEF
-
-        // Hồi full máu khi lên level
-        refillHP();
-
-        // --- Thông báo LEVEL UP bằng tiếng Anh ---
-        if (msgUI == null && gp != null && gp.getUiManager() != null) {
-            msgUI = gp.getUiManager().get(MessageUI.class);
+    private void updateSpriteFrame(boolean moving, boolean attacking) {
+        if (attacking || moving) {
+            advanceSpriteFrame(8);
+            return;
         }
-        if (msgUI != null) {
-            msgUI.showTouchMessage(
-                    "LEVEL UP!  You reached level " + level + "! Get stronger and stronger",
-                    null, // không gắn với object nào cụ thể
-                    gp
-            );
-        }
+
+        resetSpriteFrame();
     }
 
-    // Hồi 1 lượng máu cố định
-    public void heal(int amount) {
-        if (amount <= 0) return;
-        int max = getMaxHP();
-        int cur = getHP();
-        int newHp = Math.min(max, cur + amount);
-        restoreHP(newHp);
+    private void applyProgressionStats() {
+        PlayerProgressionStats stats = progression.statsForCurrentLevel();
+        configureStats(stats.maxHp(), stats.attack(), stats.defense());
     }
 
-    // Hồi theo % máu tối đa (vd 0.1 = 10%)
-    public void healPercent(double percent) {
-        if (percent <= 0) return;
-        int max = getMaxHP();
-        int healAmount = (int) Math.round(max * percent);
-        if (healAmount <= 0) healAmount = 1; // luôn hồi ít nhất 1 máu
-        heal(healAmount);
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

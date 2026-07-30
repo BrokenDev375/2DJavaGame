@@ -11,7 +11,7 @@ public final class Pick extends Weapon {
         setName("Steve's pick");
         setCollidable(false);
 
-        int t = gp.tileSize / 4;
+        int t = gp.tileSize() / 4;
         setSolidArea(new Rectangle(-t / 2, -t / 2, getWidth() + t, getHeight() + t));
         loadSprite();
     }

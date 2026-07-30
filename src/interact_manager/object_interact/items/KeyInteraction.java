@@ -1,45 +1,28 @@
 package interact_manager.object_interact.items;
 
-import main.GamePanel;
-import object_data.WorldObject;
-import player_manager.Player;
-import input_manager.InputController;
 import interact_manager.object_interact.IObjectInteraction;
-import sound_manager.SoundManager;
-import ui.effects.MessageUI;
+import interact_manager.object_interact.InteractionContext;
 
-import java.util.List;
 
 public class KeyInteraction implements IObjectInteraction {
 
     @Override
-    public void interact(GamePanel gp, Player player, InputController input, WorldObject obj) {
-        MessageUI msgUI = gp.getUiManager().get(MessageUI.class);
-        List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
+    public void interact(InteractionContext context) {
+        boolean pressed = context.isPicked();
 
-        boolean pressed = input.isPicked();
-
-        // ==== 1) BẤM F → NHẶT KEY ====
         if (pressed) {
-            SoundManager.getInstance().playSE(SoundManager.SoundID.COIN);
-            player.collectKey();
-            objects.remove(obj); // xoá key khỏi map
+            context.playCoinSound();
+            context.player().collectKey();
+            context.removeTouchedObject();
+            context.showMessage("You got a key!");
 
-            if (msgUI != null) {
-                msgUI.showTouchMessage("You got a key!", obj, gp);
-            }
-
-            // Sau khi nhặt xong, frame này coi như kết thúc tương tác
-            player.setInteracting(false);
+            context.player().endInteraction();
             return;
         }
 
-        // ==== 2) KHÔNG BẤM F → HIỆN HƯỚNG DẪN (KHÔNG SPAM) ====
-        if (!player.isInteracting()) {
-            if (msgUI != null) {
-                msgUI.showTouchMessage("Press 'F' to pick the mystery key. You may need it in the future", obj, gp);
-            }
-            player.setInteracting(true);
+        if (!context.player().isInteracting()) {
+            context.showMessage("Press 'F' to pick the mystery key. You may need it in the future");
+            context.player().beginInteraction();
         }
     }
 }

@@ -1,17 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package main;
 
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 public class UtilityTool {
     public BufferedImage scaleImage(BufferedImage original , int width, int height){
-        BufferedImage scaledImage = new BufferedImage(width , height , original.getType());
+        Objects.requireNonNull(original, "original");
+        int safeWidth = Math.max(1, width);
+        int safeHeight = Math.max(1, height);
+        int imageType = original.getType() == BufferedImage.TYPE_CUSTOM
+                ? BufferedImage.TYPE_INT_ARGB
+                : original.getType();
+        BufferedImage scaledImage = new BufferedImage(safeWidth, safeHeight, imageType);
         Graphics2D g2 = scaledImage.createGraphics();
-        g2.drawImage(original, 0, 0, width, height, null);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.drawImage(original, 0, 0, safeWidth, safeHeight, null);
         g2.dispose();
         
         return scaledImage;

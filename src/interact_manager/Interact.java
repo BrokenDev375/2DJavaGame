@@ -31,4 +31,8 @@ public class Interact {
     public void InteractNPC(int index) {
         npcInteract.handle(index);
     }
+
+    public void updateNPCProximity() {
+        npcInteract.updateProximity();
+    }
 }

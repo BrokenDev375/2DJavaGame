@@ -1,14 +1,15 @@
 package object_data;
 
+import main.DebugLog;
 import main.GamePanel;
+import main.RenderContext;
+import main.AssetLoadException;
+import main.AssetLoader;
 import world.WorldBody;
 
-import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.InputStream;
 
 public class WorldObject implements WorldBody {
 
@@ -16,6 +17,7 @@ public class WorldObject implements WorldBody {
     private int width, height;
     private BufferedImage staticImage;
     private String name;
+    private WorldObjectType type;
 
     private Rectangle solidArea;
     private boolean collidable = false;
@@ -32,10 +34,15 @@ public class WorldObject implements WorldBody {
     public void update() {}
 
     public void draw(Graphics2D g2) {
+        draw(g2, gp);
+    }
+
+    public void draw(Graphics2D g2, RenderContext render) {
         BufferedImage image = getRenderImage();
-        if (image != null && gp.getEntityManager() != null && gp.getEntityManager().getPlayer() != null) {
-            int screenX = gp.getCamera().screenX(this, gp.getEntityManager().getPlayer());
-            int screenY = gp.getCamera().screenY(this, gp.getEntityManager().getPlayer());
+        var player = render.player();
+        if (image != null && player != null) {
+            int screenX = render.camera().screenX(this, player);
+            int screenY = render.camera().screenY(this, player);
             g2.drawImage(image, screenX, screenY, null);
         }
     }
@@ -66,12 +73,8 @@ public class WorldObject implements WorldBody {
         return height;
     }
 
-    public void setStaticImage(BufferedImage image) {
+    protected void useStaticImage(BufferedImage image) {
         this.staticImage = image;
-    }
-
-    public BufferedImage getStaticImage() {
-        return staticImage;
     }
 
     public void setName(String name) {
@@ -82,8 +85,16 @@ public class WorldObject implements WorldBody {
         return name;
     }
 
-    public boolean isNamed(String expectedName) {
-        return expectedName != null && expectedName.equals(name);
+    void setType(WorldObjectType type) {
+        this.type = type;
+    }
+
+    public java.util.Optional<WorldObjectType> type() {
+        return java.util.Optional.ofNullable(type);
+    }
+
+    public boolean isType(WorldObjectType expectedType) {
+        return expectedType != null && expectedType == type;
     }
 
     public void setSolidArea(Rectangle area) {
@@ -136,22 +147,15 @@ public class WorldObject implements WorldBody {
     }
 
     protected BufferedImage setup(String path, int w, int h) {
-        try (InputStream is = getClass().getResourceAsStream(path + ".png")) {
-            if (is == null) return null;
-            BufferedImage src = ImageIO.read(is);
-            BufferedImage dst = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = dst.createGraphics();
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.drawImage(src, 0, 0, w, h, null);
-            g.dispose();
-            return dst;
-        } catch (Exception e) {
-            System.err.println("[WorldObject.setup] Load fail: " + path + " -> " + e.getMessage());
-            return null;
+        try {
+            return gp.getAssetLoader().requireScaledImage(path, w, h, getClass().getSimpleName());
+        } catch (AssetLoadException e) {
+            DebugLog.error(e.getMessage(), e);
+            return AssetLoader.placeholderImage(w, h);
         }
     }
 
-    public BufferedImage getRenderImage() {
+    protected BufferedImage getRenderImage() {
         return staticImage;
     }
 }

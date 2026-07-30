@@ -40,7 +40,7 @@ public class GameOverUI extends BaseUI {
         if (gp.getGameState() != GameState.GAME_OVER) return;
         // Nền mờ phủ toàn màn hình
         g2.setColor(new Color(0, 0, 0, 150));
-        g2.fillRect(0, 0, gp.screenWidth, gp.screenHeight);
+        g2.fillRect(0, 0, gp.screenWidth(), gp.screenHeight());
         int x;
         int y;
         String text;
@@ -51,7 +51,7 @@ public class GameOverUI extends BaseUI {
         // Đổ bóng
         g2.setColor(Color.black);
         x = getXforCenteredText(g2, text);
-        y = gp.tileSize * 4;
+        y = gp.tileSize() * 4;
         g2.drawString(text, x, y);
 
         // Chữ màu trắng chính
@@ -62,7 +62,7 @@ public class GameOverUI extends BaseUI {
         g2.setFont(g2.getFont().deriveFont(50F));
         text = "Restart";
         x = getXforCenteredText(g2, text);
-        y += gp.tileSize * 4;
+        y += gp.tileSize() * 4;
 
         g2.drawString(text, x, y);
         if (commandNum == 0) {
@@ -81,7 +81,7 @@ public class GameOverUI extends BaseUI {
     // Trả về tọa độ X để căn giữa văn bản
     public int getXforCenteredText(Graphics2D g2, String text) {
         int length = (int) g2.getFontMetrics().getStringBounds(text, g2).getWidth();
-        return gp.screenWidth / 2 - length / 2;
+        return gp.screenWidth() / 2 - length / 2;
     }
     @Override
     public boolean shouldRenderIn(GameState state) {

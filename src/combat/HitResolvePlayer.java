@@ -11,9 +11,7 @@ public final class HitResolvePlayer {
 
     public static void resolve(Player player, List<Entity> monsters) {
         if (player == null || player.isDead()) return;
-        if (!player.isAttackActive()) return;
-
-        int rawDamage = Math.max(1, player.getATK());
+        int rawDamage = player.attackPower();
         int[] knockback = CombatSystem.computePlayerAttackKnockback(player);
 
         for (Entity e : monsters) {
@@ -21,11 +19,8 @@ public final class HitResolvePlayer {
             Monster m = (Monster) e;
             if (m.isDead()) continue;
 
-            if (!player.isAttackHitting(m)) continue;
-
-            if (!player.wasHitThisSwing(m)) {
+            if (player.tryLandAttackOn(m)) {
                 DamageProcessor.applyDamage(m, player, rawDamage, knockback[0], knockback[1]);
-                player.markHitLanded(m);
             }
         }
     }

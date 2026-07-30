@@ -11,11 +11,11 @@ public class HealthPosion extends WorldObject {
         super(gp);
         setMapIndex(mapIndex);
         setName("healthposion");
-        setSize(gp.tileSize, gp.tileSize);
-        setStaticImage(setup("/object/healthposion", getWidth(), getHeight()));
+        setSize(gp.tileSize(), gp.tileSize());
+        useStaticImage(setup("/object/healthposion", getWidth(), getHeight()));
         setCollidable(false);
 
-        int t = gp.tileSize / 8;
+        int t = gp.tileSize() / 8;
         setSolidArea(new Rectangle(-t / 2, -t / 2, getWidth() + t, getHeight() + t));
     }
 }

@@ -116,10 +116,10 @@ public class DialogueUI extends BaseUI {
     @Override
     public void draw(Graphics2D g2) {
         if (!isActive()) return;
-        int x = gp.tileSize;
-        int y = gp.screenHeight - gp.tileSize * 4;
-        int w = gp.screenWidth - 2 * x;
-        int h = gp.tileSize * 3;
+        int x = gp.tileSize();
+        int y = gp.screenHeight() - gp.tileSize() * 4;
+        int w = gp.screenWidth() - 2 * x;
+        int h = gp.tileSize() * 3;
         // Nền hộp thoại
         g2.setColor(new Color(0, 0, 0, 200));
         g2.fillRoundRect(x, y, w, h, 20, 20);
@@ -130,7 +130,7 @@ public class DialogueUI extends BaseUI {
         // Text hội thoại
         g2.setFont(new Font("Arial", Font.PLAIN, 22));
         g2.setColor(Color.white);
-        drawMultiline(g2, text.toString(), x + gp.tileSize / 2, y + gp.tileSize, w - gp.tileSize);
+        drawMultiline(g2, text.toString(), x + gp.tileSize() / 2, y + gp.tileSize(), w - gp.tileSize());
 
         // Hint chuyển trang
         if (finished) {
@@ -138,8 +138,8 @@ public class DialogueUI extends BaseUI {
             String hint = hasMore ? "[E] to continue" : "[E] to close";
             FontMetrics fm = g2.getFontMetrics();
             int hintWidth = fm.stringWidth(hint);
-            int paddingX = gp.tileSize / 2;
-            int paddingY = gp.tileSize / 3;
+            int paddingX = gp.tileSize() / 2;
+            int paddingY = gp.tileSize() / 3;
             int hintX = x + w - paddingX - hintWidth;
             int hintY = y + h - paddingY;
             g2.setColor(new Color(255, 255, 255, 210));

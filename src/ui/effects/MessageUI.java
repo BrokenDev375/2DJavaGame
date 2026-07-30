@@ -28,7 +28,7 @@ public class MessageUI extends BaseUI {
         if(show){
             g2.setColor(Color.white);
             g2.setFont(new Font("Arial", Font.PLAIN, 25));
-            g2.drawString(message, gp.tileSize, gp.tileSize*5);
+            g2.drawString(message, gp.tileSize(), gp.tileSize()*5);
         }
     }
     @Override

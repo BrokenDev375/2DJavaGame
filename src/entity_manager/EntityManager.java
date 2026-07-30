@@ -2,15 +2,16 @@ package entity_manager;
 
 import combat.CombatSystem;
 import entity.Entity;
+import game_data.ObjectData;
 import monster_data.Monster;
 import player_manager.Player;
 import input_manager.InputController;
-import object_data.WorldObject;           // << thêm
 import main.GamePanel;
 
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class EntityManager {
 
@@ -29,7 +30,16 @@ public class EntityManager {
     public Player getPlayer() { return player; }
     public List<Entity> getMonsters(int map) { return mM.getMonsters(map); }
     public List<Entity> getNPCs(int map) { return npcM.getNPCs(map); }
+    public Optional<Entity> getMonsterAt(int map, int index) { return mM.monsterAt(map, index); }
+    public Optional<Entity> getNPCAt(int map, int index) { return npcM.npcAt(map, index); }
 
+    public List<ObjectData> snapshotMonsters() {
+        return mM.snapshotMonsters();
+    }
+
+    public void restoreMonsters(List<ObjectData> monsterSnapshots, int fallbackMapId) {
+        mM.restoreMonsters(monsterSnapshots, fallbackMapId);
+    }
 
     public List<Entity> getMonsters() {
         return mM.getMonsters(gp.getCurrentMap());

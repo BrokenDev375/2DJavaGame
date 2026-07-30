@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class WanderMovement implements MovementController {
+public final class WanderMovement implements MovementController {
     private final int speed;
     private final int changeEveryFrames;
     private final int minHoldFrames;

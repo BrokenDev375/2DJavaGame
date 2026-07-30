@@ -4,18 +4,18 @@ import entity.Entity;
 import world.WorldBody;
 
 public final class Camera {
-    private final GamePanel gp;
+    private final GameConfig config;
 
-    public Camera(GamePanel gp) {
-        this.gp = gp;
+    public Camera(GameConfig config) {
+        this.config = config;
     }
 
     public int anchorX() {
-        return gp.screenWidth / 2 - gp.tileSize / 2;
+        return config.screenWidth() / 2 - config.tileSize() / 2;
     }
 
     public int anchorY() {
-        return gp.screenHeight / 2 - gp.tileSize / 2;
+        return config.screenHeight() / 2 - config.tileSize() / 2;
     }
 
     public int originX(Entity focus) {
@@ -47,7 +47,7 @@ public final class Camera {
     }
 
     public int visibleRight(Entity focus, int buffer) {
-        return originX(focus) + gp.screenWidth + buffer;
+        return originX(focus) + config.screenWidth() + buffer;
     }
 
     public int visibleTop(Entity focus, int buffer) {
@@ -55,7 +55,7 @@ public final class Camera {
     }
 
     public int visibleBottom(Entity focus, int buffer) {
-        return originY(focus) + gp.screenHeight + buffer;
+        return originY(focus) + config.screenHeight() + buffer;
     }
 
     public boolean isVisible(WorldBody body, Entity focus, int buffer) {

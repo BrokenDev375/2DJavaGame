@@ -1,114 +1,50 @@
 package entity_manager;
 
 import entity.Entity;
+import game_data.ObjectData;
 import main.DebugLog;
 import main.GamePanel;
-import monster_data.*;
+import monster_data.Monster;
+import monster_data.MonsterFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-/**
- * Quản lý quái + respawn theo điểm spawn cố định.
- * - Không dùng gp.player, nhận toạ độ player từ outside.
- * - Mỗi SpawnSlot = 1 chỗ spawn 1 con (respawn lại đúng chỗ đó).
- */
 public class MonsterManager {
     private final GamePanel gp;
-
+    private final MonsterFactory monsterFactory;
     private final Map<Integer, List<Entity>> monstersByMap = new HashMap<>();
-
     private final List<SpawnSlot> spawnSlots = new ArrayList<>();
+    private final boolean useDistanceCheck = true;
 
-    // Bật/tắt check “spawn xa player”
-    private final boolean useDistanceCheck = false;
-
-    private static final boolean DEBUG_MONSTER = true;
-
-    // ----------- Cấu trúc 1 slot spawn -----------
     private static class SpawnSlot {
-        final int mapId;
-        final int worldX, worldY;
-        final String monsterId;       // "SLIME", "BAT", "ORC", "BOSS"...
-        final long respawnDelayMs;    // thời gian hồi sinh
+        final MonsterSpawnPlan plan;
 
-        Entity current;               // quái đang sống (null nếu slot trống)
-        long lastDeathTime = 0L;      // lần cuối con này chết
+        Entity current;
+        long lastDeathTime = 0L;
 
-        SpawnSlot(int mapId, int worldX, int worldY,
-                  String monsterId, long respawnDelayMs) {
-            this.mapId = mapId;
-            this.worldX = worldX;
-            this.worldY = worldY;
-            this.monsterId = monsterId;
-            this.respawnDelayMs = respawnDelayMs;
+        SpawnSlot(MonsterSpawnPlan plan) {
+            this.plan = plan;
         }
     }
 
     public MonsterManager(GamePanel gp) {
-        this.gp = gp;
+        this(gp, new MonsterFactory(gp), new MonsterSpawnTable(gp).defaultPlans());
+    }
 
-        setupSpawnSlots();
+    public MonsterManager(GamePanel gp, MonsterFactory monsterFactory, List<MonsterSpawnPlan> spawnPlans) {
+        this.gp = gp;
+        this.monsterFactory = monsterFactory;
+        for (MonsterSpawnPlan plan : spawnPlans) {
+            spawnSlots.add(new SpawnSlot(plan));
+        }
         initialSpawn();
     }
-
-    private void setupSpawnSlots() {
-        int t = gp.tileSize;
-
-        // Lưu lại map hiện tại của ChunkManager để restore sau
-        String oldPath = gp.getChunkManager().getMapPath();
-
-        // ================= MAP 0: Slime field =================
-        gp.getChunkManager().loadMap("map0");
-        gp.getChunkManager().loadAllChunksSync();     // load toàn bộ chunk map0 để check collision
-
-        for (int ty = 18; ty <= 72; ty += 9) {
-            for (int tx = 18; tx <= 72; tx += 9) {
-                int wx = tx * t;
-                int wy = ty * t;
-
-                if (isBlockedTile(0, wx, wy)) {
-                    continue;
-                }
-                addSpawn(0, wx, wy, "SLIME", 15_000L);
-            }
-        }
-
-        // ================= MAP 1: Orc + Bat + Boss =================
-        gp.getChunkManager().loadMap("map1");
-        gp.getChunkManager().loadAllChunksSync();     // load toàn bộ chunk map1 để check collision
-
-        // Vùng quái thường: khoảng 30 con (5 hàng x 6 cột = 30 vị trí)
-        int mobCount = 0;
-        for (int ty = 18; ty <= 54; ty += 9) {      // 18,27,36,45,54  -> 5 hàng
-            for (int tx = 18; tx <= 63; tx += 9) {  // 18..63           -> 6 cột
-                int wx = tx * t;
-                int wy = ty * t;
-
-                if (isBlockedTile(1, wx, wy)) {
-                    continue;
-                }
-
-                // Xen kẽ ORC / BAT cho vui
-                String id = (mobCount % 2 == 0) ? "ORC" : "BAT";
-                long respawn = id.equals("ORC") ? 35_000L : 25_000L;
-
-                addSpawn(1, wx, wy, id, respawn);
-                mobCount++;
-            }
-        }
-
-        addSpawn(1, 50* t, 75 * t, "BOSS", 600_000L); // ~10 phút respawn
-
-        gp.getChunkManager().loadMap(oldPath);
-    }
-
-    private void addSpawn(int mapId, int wx, int wy,
-                          String monsterId, long respawnDelayMs) {
-        SpawnSlot slot = new SpawnSlot(mapId, wx, wy, monsterId, respawnDelayMs);
-        spawnSlots.add(slot);
-    }
-
-    // 2. SPAWN LÚC BẮT ĐẦU GAME + RESPAWN
 
     private void initialSpawn() {
         for (SpawnSlot slot : spawnSlots) {
@@ -119,49 +55,176 @@ public class MonsterManager {
     private void spawnNow(SpawnSlot slot) {
         if (slot.current != null) return;
 
-        Entity m = createMonster(slot.monsterId, slot.mapId);
-        if (m == null) {
+        Entity monster = monsterFactory.create(slot.plan.monsterType(), slot.plan.mapId());
+
+        monster.spawnAt(slot.plan.worldX(), slot.plan.worldY());
+
+        if (monster instanceof monster_data.Monster typedMonster) {
+            typedMonster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
+        }
+
+        monstersOnMap(slot.plan.mapId()).add(monster);
+        slot.current = monster;
+    }
+
+    public List<Entity> getMonsters(int mapId) {
+        return Collections.unmodifiableList(monstersByMap.getOrDefault(mapId, Collections.emptyList()));
+    }
+
+    public List<ObjectData> snapshotMonsters() {
+        List<ObjectData> snapshots = new ArrayList<>();
+        for (SpawnSlot slot : spawnSlots) {
+            snapshots.add(snapshotSlot(slot));
+        }
+        return Collections.unmodifiableList(snapshots);
+    }
+
+    public void restoreMonsters(List<ObjectData> snapshots, int fallbackMapId) {
+        if (snapshots == null) {
             return;
         }
 
-        m.spawnAt(slot.worldX, slot.worldY);
+        List<SpawnSlot> restoredSlots = new ArrayList<>();
+        for (int i = 0; i < snapshots.size(); i++) {
+            ObjectData saved = snapshots.get(i);
+            Optional<SpawnSlot> target = findSlotBySnapshot(saved, fallbackMapId, restoredSlots);
+            if (target.isEmpty()) {
+                target = findSlotByMapIndex(snapshotMapId(saved, fallbackMapId), i, restoredSlots);
+            }
 
-        if (m instanceof monster_data.Monster monster) {
-            monster.setHome(slot.worldX, slot.worldY);
+            target.ifPresent(slot -> {
+                restoreSlot(slot, saved);
+                restoredSlots.add(slot);
+            });
+        }
+    }
+
+    public Optional<Entity> monsterAt(int mapId, int index) {
+        List<Entity> monsters = monstersByMap.get(mapId);
+        if (monsters == null || index < 0 || index >= monsters.size()) return Optional.empty();
+        return Optional.of(monsters.get(index));
+    }
+
+    private List<Entity> monstersOnMap(int mapId) {
+        return monstersByMap.computeIfAbsent(mapId, k -> new ArrayList<>());
+    }
+
+    private ObjectData snapshotSlot(SpawnSlot slot) {
+        if (slot.current instanceof Monster monster) {
+            return new ObjectData(
+                    monster.getName(),
+                    monster.getWorldX(),
+                    monster.getWorldY(),
+                    !monster.isDead(),
+                    slot.plan.worldX(),
+                    slot.plan.worldY(),
+                    slot.plan.mapId(),
+                    monster.getHP()
+            );
         }
 
-        monstersByMap
-                .computeIfAbsent(slot.mapId, k -> new ArrayList<>())
-                .add(m);
-
-        slot.current = m;
+        return new ObjectData(
+                slot.plan.monsterType().name(),
+                slot.plan.worldX(),
+                slot.plan.worldY(),
+                false,
+                slot.plan.worldX(),
+                slot.plan.worldY(),
+                slot.plan.mapId()
+        );
     }
 
-    private Entity createMonster(String id, int mapId) {
-        return switch (id) {
-            case "SLIME" -> {
-                double r = Math.random();      // 0.0 -> 1.0
+    private Optional<SpawnSlot> findSlotBySnapshot(
+            ObjectData saved,
+            int fallbackMapId,
+            List<SpawnSlot> restoredSlots
+    ) {
+        if (saved == null || !saved.hasSpawnIdentity()) {
+            return Optional.empty();
+        }
 
-                if (r < 0.5) {
-                    yield new RedSlimeMonster(gp, mapId);
-                } else {
-                    yield new SlimeMonster(gp, mapId);
-                }
+        int mapId = snapshotMapId(saved, fallbackMapId);
+        for (SpawnSlot slot : spawnSlots) {
+            if (!restoredSlots.contains(slot)
+                    && slot.plan.mapId() == mapId
+                    && slot.plan.worldX() == saved.getSpawnX()
+                    && slot.plan.worldY() == saved.getSpawnY()) {
+                return Optional.of(slot);
             }
-            case "BAT"   -> new BatMonster(gp, mapId);
-            case "ORC"   -> new OrcMonster(gp, mapId);
-            case "BOSS"  -> new SkeletonLord(gp, mapId);
-            default      -> null;
-        };
+        }
+        return Optional.empty();
     }
 
-    // 3. API PUBLIC
-    public List<Entity> getMonsters(int mapId) {
-        return monstersByMap.getOrDefault(mapId, Collections.emptyList());
+    private Optional<SpawnSlot> findSlotByMapIndex(
+            int mapId,
+            int index,
+            List<SpawnSlot> restoredSlots
+    ) {
+        int sameMapIndex = 0;
+        for (SpawnSlot slot : spawnSlots) {
+            if (restoredSlots.contains(slot) || slot.plan.mapId() != mapId) {
+                continue;
+            }
+
+            if (sameMapIndex == index) {
+                return Optional.of(slot);
+            }
+            sameMapIndex++;
+        }
+        return Optional.empty();
+    }
+
+    private void restoreSlot(SpawnSlot slot, ObjectData saved) {
+        if (saved == null) {
+            return;
+        }
+
+        if (!saved.isActive()) {
+            despawn(slot);
+            slot.lastDeathTime = System.currentTimeMillis();
+            return;
+        }
+
+        Monster monster = ensureMonsterFor(slot, saved);
+        monster.restorePosition(saved.getWorldX(), saved.getWorldY());
+        monster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
+        if (saved.hasHealth()) {
+            monster.restoreHP(saved.getHealth());
+        } else {
+            monster.revive();
+        }
+    }
+
+    private Monster ensureMonsterFor(SpawnSlot slot, ObjectData saved) {
+        if (slot.current instanceof Monster monster) {
+            if (MonsterFactory.matchesSavedName(monster.getName(), saved.getType())) {
+                return monster;
+            }
+            despawn(slot);
+        }
+
+        Monster monster = monsterFactory
+                .createBySavedName(saved.getType(), slot.plan.mapId())
+                .orElseGet(() -> monsterFactory.create(slot.plan.monsterType(), slot.plan.mapId()));
+        monster.spawnAt(slot.plan.worldX(), slot.plan.worldY());
+        monster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
+        monstersOnMap(slot.plan.mapId()).add(monster);
+        slot.current = monster;
+        return monster;
+    }
+
+    private void despawn(SpawnSlot slot) {
+        if (slot.current != null) {
+            monstersOnMap(slot.plan.mapId()).remove(slot.current);
+            slot.current = null;
+        }
+    }
+
+    private int snapshotMapId(ObjectData saved, int fallbackMapId) {
+        return saved != null && saved.hasMapIndex() ? saved.getMapIndex() : fallbackMapId;
     }
 
     public void update(int mapId, int playerX, int playerY) {
-        // 3.1 Update quái đang sống
         List<Entity> list = monstersByMap.get(mapId);
         if (list != null) {
             Iterator<Entity> it = list.iterator();
@@ -169,10 +232,12 @@ public class MonsterManager {
                 Entity e = it.next();
                 e.update();
 
-                if (isDead(e)) {
-                    if (DEBUG_MONSTER) {
-                        DebugLog.info("[DEAD] " + e.getName() + " @map=" + mapId +
-                                " x=" + e.getWorldX() + " y=" + e.getWorldY());
+                if (e.isDead()) {
+                    if (DebugLog.isEnabled()) {
+                        DebugLog.info("[MonsterManager] Dead: " + e.getName()
+                                + " map=" + mapId
+                                + " x=" + e.getWorldX()
+                                + " y=" + e.getWorldY());
                     }
                     registerDeath(e);
                     it.remove();
@@ -180,22 +245,13 @@ public class MonsterManager {
             }
         }
 
-        // Respawn quái cho map hiện tại
         handleRespawn(mapId, playerX, playerY);
     }
 
     public void draw(java.awt.Graphics2D g2, int mapId) {
-        for (Entity m : getMonsters(mapId)) {
+        for (Entity m : monstersByMap.getOrDefault(mapId, Collections.emptyList())) {
             m.draw(g2);
         }
-    }
-
-    // 4. CHẾT + RESPAWN
-
-    private boolean isDead(Entity e) {
-        boolean dead = e.isDead();   // dùng hàm trong Entity (hp <= 0)
-
-        return dead;
     }
 
     private void registerDeath(Entity e) {
@@ -213,22 +269,21 @@ public class MonsterManager {
         long now = System.currentTimeMillis();
 
         for (SpawnSlot slot : spawnSlots) {
-            if (slot.mapId != currentMapId) continue;    // chỉ xử lý map hiện tại
-            if (slot.current != null) continue;          // slot đang có quái
-            if (slot.lastDeathTime == 0L) continue;      // chưa từng chết ⇒ skip
+            if (slot.plan.mapId() != currentMapId) continue;
+            if (slot.current != null) continue;
+            if (slot.lastDeathTime == 0L) continue;
 
             long waited = now - slot.lastDeathTime;
-            if (waited < slot.respawnDelayMs) {
+            if (waited < slot.plan.respawnDelayMs()) {
                 continue;
             }
 
-            if (useDistanceCheck &&
-                    !isFarFromPlayer(slot.worldX, slot.worldY, playerX, playerY)) {
+            if (useDistanceCheck && !isFarFromPlayer(slot.plan.worldX(), slot.plan.worldY(), playerX, playerY)) {
                 continue;
             }
 
-            if (DEBUG_MONSTER) {
-                DebugLog.info("[RESPAWN_OK] " + slot.monsterId + " -> spawnNow");
+            if (DebugLog.isEnabled()) {
+                DebugLog.info("[MonsterManager] Respawn: " + slot.plan.monsterType());
             }
             spawnNow(slot);
         }
@@ -237,12 +292,8 @@ public class MonsterManager {
     private boolean isFarFromPlayer(int x, int y, int playerX, int playerY) {
         int dx = x - playerX;
         int dy = y - playerY;
-        int safeRadius = gp.tileSize * 5;
+        int safeRadius = gp.tileSize() * 5;
         return dx * dx + dy * dy > safeRadius * safeRadius;
     }
 
-    private boolean isBlockedTile(int mapId, int worldX, int worldY) {
-        // mapId hiện vẫn chưa cần dùng, vì ChunkManager đang trỏ
-        return gp.getTileManager().isCollisionAtWorld(worldX, worldY, gp.getChunkManager());
-    }
 }

@@ -4,7 +4,7 @@ import entity.Entity;
 
 import java.util.function.Predicate;
 
-public class AggroSwitchMovement implements MovementController {
+public final class AggroSwitchMovement implements MovementController {
     private final MovementController idleController;
     private final MovementController aggroController;
     private final Predicate<Entity> aggroCondition;

@@ -30,10 +30,10 @@ public class MonsterHealthUI extends BaseUI {
             int screenX = gp.getCamera().screenX(monster, gp.getEntityManager().getPlayer());
             int screenY = gp.getCamera().screenY(monster, gp.getEntityManager().getPlayer());
 
-            int barWidth = gp.tileSize;
-            int barHeight = gp.tileSize / 8;
-            int barX = screenX + gp.tileSize / 2 - barWidth / 2;
-            int barY = screenY - gp.tileSize - (gp.tileSize / 2 + 6);
+            int barWidth = gp.tileSize();
+            int barHeight = gp.tileSize() / 8;
+            int barX = screenX + gp.tileSize() / 2 - barWidth / 2;
+            int barY = screenY - gp.tileSize() - (gp.tileSize() / 2 + 6);
 
             g2.setColor(Color.darkGray);
             g2.fillRect(barX, barY, barWidth, barHeight);

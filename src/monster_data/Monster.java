@@ -1,49 +1,62 @@
 package monster_data;
 
-import combat.CombatSystem;
+import ai.movement.MovementController;
 import entity.Direction;
 import entity.Entity;
 import main.DebugLog;
 import main.GamePanel;
 import player_manager.Player;
-import world.WorldBody;
 
-import java.awt.Rectangle;
+import java.util.Objects;
 
 public abstract class Monster extends Entity {
-
-    // config combat
-    protected int attackDamage         = 1;
-    protected int attackKnockback      = 6;
-    protected int attackTriggerRadius  = 36;
-    protected int faceLockThreshold    = 4;
+    private int attackDamage = 0;
+    protected int attackKnockback = 6;
+    protected int attackTriggerRadius = 36;
+    protected int faceLockThreshold = 4;
     protected int atkW, atkH;
-    private int homeX, homeY; // toạ độ “nhà” để leash + wander quanh
+    protected int expReward = 1;
 
-    // --- EXP config ---
-    protected int expReward = 1;   // quái này cho bao nhiêu EXP khi chết
+    private final MonsterAttackPlanner attackPlanner = new MonsterAttackPlanner();
+    private LootDropPolicy lootDropPolicy = new LootDropPolicy();
+    private int homeX, homeY;
 
     public Monster(GamePanel gp) {
-        super(gp);
+        this(gp, null);
+    }
 
-        configureAttackBox(gp.tileSize, gp.tileSize * 3 / 2);
-        configureAttackTiming(8, 6, 10, 30) ;
-        this.attackTriggerRadius = Math.max(gp.tileSize, 48);
+    protected Monster(GamePanel gp, MovementController movementController) {
+        super(gp, movementController);
+
+        configureAttackBox(gp.tileSize(), gp.tileSize() * 3 / 2);
+        configureAttackTiming(8, 6, 10, 30);
+        this.attackTriggerRadius = Math.max(gp.tileSize(), 48);
         this.faceLockThreshold = 6;
-        this.atkW = gp.tileSize;
-        this.atkH = gp.tileSize * 3 / 2;
+        this.atkW = gp.tileSize();
+        this.atkH = gp.tileSize() * 3 / 2;
         configureAttackBox(atkW, atkH);
     }
-    // Getter/Setter EXP
+
     public int getExpReward() {
         return expReward;
     }
 
-    public void setExpReward(int expReward) {
+    public int attackPower() {
+        return attackDamage > 0 ? attackDamage : Math.max(1, getATK());
+    }
+
+    protected void configureAttackDamage(int attackDamage) {
+        this.attackDamage = Math.max(0, attackDamage);
+    }
+
+    protected void configureExpReward(int expReward) {
         this.expReward = Math.max(0, expReward);
     }
 
-    // (optional) auto tính exp theo chỉ số quái
+    public void useLootDropPolicy(LootDropPolicy lootDropPolicy) {
+        this.lootDropPolicy = Objects.requireNonNull(lootDropPolicy, "lootDropPolicy");
+    }
+
     protected void initExpFromStats() {
         int base = (int) (
                 getMaxHP() * 0.1 +
@@ -52,13 +65,13 @@ public abstract class Monster extends Entity {
         );
         this.expReward = Math.max(1, base);
     }
+
     @Override
     public void update() {
-        // 1) Quyết định có bắt đầu attack không (nếu đang attack thì thôi)
         decideAttack();
 
-        // 2) Giữ vị trí nếu đang attack
-        int preX = getWorldX(), preY = getWorldY();
+        int preX = getWorldX();
+        int preY = getWorldY();
         boolean holdPos = isAttacking();
 
         super.update();
@@ -67,7 +80,8 @@ public abstract class Monster extends Entity {
             restorePosition(preX, preY);
         }
     }
-    public void setHome(int x, int y) {
+
+    public void rememberHomePosition(int x, int y) {
         this.homeX = x;
         this.homeY = y;
     }
@@ -81,111 +95,61 @@ public abstract class Monster extends Entity {
     }
 
     protected void decideAttack() {
-        // Không cho spam: nếu CombatSystem đang trong 1 đòn thì bỏ qua
         if (isAttacking()) return;
 
-        // 0) Lấy player an toàn
-        Player p = (gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null);
-        if (p == null || p.isDead()) return;
+        Player player = gp.getEntityManager() != null ? gp.getEntityManager().getPlayer() : null;
+        if (player == null || player.isDead()) return;
 
-        // 1) Tính body rect của quái & player (world space)
-        Rectangle meBody = getSolidAreaWorld();
-        Rectangle plBody = getSolidAreaWorld(p);
-
-        // Player “béo” hơn 1 chút để dễ trúng (tránh hụt vì lẻ pixel)
-        Rectangle plFat = new Rectangle(plBody);
-        plFat.grow(2, 2);
-
-        // 2) Nếu đã chạm thân -> đánh ngay
-        if (meBody.intersects(plFat)) {
-            tryStartAttackOn(p);
-            return;
-        }
-
-        // 3) Reach-rectangle: kéo ô meBody theo hướng đang nhìn
-        final int rw = (atkW > 0 ? atkW : gp.tileSize);
-        final int rh = (atkH > 0 ? atkH : gp.tileSize);
-
-        Rectangle reach = new Rectangle(meBody);
-        switch (this.getDirection()) {
-            case UP:
-                reach.y      -= rh;
-                reach.height += rh;
-                break;
-            case DOWN:
-                reach.height += rh;
-                break;
-            case LEFT:
-                reach.x     -= rw;
-                reach.width += rw;
-                break;
-            case RIGHT:
-                reach.width += rw;
-                break;
-        }
-
-        // 4) Nếu player ở trong tầm reach -> bắt đầu đòn
-        if (reach.intersects(plFat)) {
-            tryStartAttackOn(p);
+        int reachWidth = atkW > 0 ? atkW : gp.tileSize();
+        int reachHeight = atkH > 0 ? atkH : gp.tileSize();
+        if (attackPlanner.canReachTarget(this, getDirection(), player, reachWidth, reachHeight)) {
+            tryStartAttackOn(player);
         }
     }
 
-    protected void tryStartAttackOn(Player p) {
-        // 1) CombatSystem phải cho phép (cooldown, state…)
+    protected void tryStartAttackOn(Player player) {
         if (!canStartAttack()) return;
 
-        // 2) Xoay mặt 1 lần về phía player
-        faceOnceToward(p);
-
-        // 3) LOCK HƯỚNG ĐÁNH: chụp lại hướng tại thời điểm này
-        this.lockAttackDirection();
-
-        // 4) Bắt đầu đòn đánh
+        faceOnceToward(player);
+        lockAttackDirection();
         startAttack();
-        clearHitThisSwing();
     }
 
-    private void faceOnceToward(Player p) {
-        int dx = p.getWorldX() - this.getWorldX();
-        int dy = p.getWorldY() - this.getWorldY();
-        if (Math.abs(dx) > Math.abs(dy)) {
-            this.face((dx >= 0) ? Direction.RIGHT : Direction.LEFT);
-        } else {
-            this.face((dy >= 0) ? Direction.DOWN : Direction.UP);
-        }
+    public int[] attackKnockbackAgainst(Player player) {
+        final int defaultForce = 3;
+        final int maxForce = 3;
+        if (player == null || player.isDead() || isDead()) return new int[]{0, 0};
+
+        int force = getAttackKnockbackForce() > 0 ? getAttackKnockbackForce() : defaultForce;
+        int dx = player.getWorldX() - getWorldX();
+        int dy = player.getWorldY() - getWorldY();
+        double length = Math.hypot(dx, dy);
+
+        int knockbackX = length == 0 ? 0 : (int) Math.round(force * dx / length);
+        int knockbackY = length == 0 ? 0 : (int) Math.round(force * dy / length);
+
+        if (knockbackX == 0 && dx != 0) knockbackX = dx > 0 ? 1 : -1;
+        if (knockbackY == 0 && dy != 0) knockbackY = dy > 0 ? 1 : -1;
+
+        return new int[]{
+                clamp(knockbackX, -maxForce, maxForce),
+                clamp(knockbackY, -maxForce, maxForce)
+        };
     }
 
-    protected static Rectangle getSolidAreaWorld(WorldBody body) {
-        return body.getSolidAreaWorld();
-    }
-    public void onDeath() {
-        // 1) EXP
-        Player p = (gp != null && gp.getEntityManager() != null) ? gp.getEntityManager().getPlayer() : null;
-        if (p != null) {
-            int expGain = getExpReward();
-            DebugLog.info("[EXP] +" + expGain + " for " + getName());
-            p.gainExp(expGain);
-        } else {
-            DebugLog.info("[EXP] player not found");
-        }
-
-        // 2) 25% drop
-        double roll = Math.random();
-        DebugLog.info("[DROP] roll=" + roll);
-        if (roll < 0.25) {
-            DebugLog.info("[DROP] health potion");
-            spawnHealthPosionDrop();
-        } else {
-            DebugLog.info("[DROP] none");
-        }
+    public MonsterDeathResult onDeath() {
+        return createDeathResult();
     }
 
-    private void spawnHealthPosionDrop() {
-        if (gp == null || gp.getObjectManager() == null) return;
-
-        gp.getObjectManager().spawnHealthPosion(this.getMapIndex(), this.getWorldX(), this.getWorldY());
+    protected MonsterDeathResult createDeathResult() {
+        return MonsterDeathResult.of(
+                getName(),
+                getExpReward(),
+                lootDropPolicy.rollHealthPotion(getMapIndex(), getWorldX(), getWorldY())
+        );
     }
 
+    @Override
     protected void reduceHP(int amount) {
         boolean wasDead = isDead();
         DebugLog.info("[DMG] " + getName() + " incoming=" + amount + " hp=" + getHP());
@@ -195,8 +159,16 @@ public abstract class Monster extends Entity {
         DebugLog.info("[DMG] " + getName() + " hp=" + getHP());
 
         if (!wasDead && isDead()) {
-            DebugLog.info("[DEATH] " + getName());
-            onDeath();
+            MonsterDeathHandler.apply(gp, onDeath());
         }
+    }
+
+    private void faceOnceToward(Player player) {
+        Direction direction = attackPlanner.directionToward(this, player);
+        face(direction);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

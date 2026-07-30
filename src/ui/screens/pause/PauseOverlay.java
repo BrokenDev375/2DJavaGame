@@ -32,11 +32,11 @@ public class PauseOverlay extends BaseUI {
     private void loadBackground() {
         bgImg = LoadSave.GetSpriteAtlas(LoadSave.PAUSE_BACKGROUND);
 
-        float scale = gp.tileSize / 48f;
+        float scale = gp.tileSize() / 48f;
         bgW = Math.round(bgImg.getWidth() * scale);
         bgH = Math.round(bgImg.getHeight() * scale);
-        bgX = gp.screenWidth  / 2 - bgW / 2;
-        bgY = gp.screenHeight / 2 - bgH / 2;
+        bgX = gp.screenWidth()  / 2 - bgW / 2;
+        bgY = gp.screenHeight() / 2 - bgH / 2;
     }
     // Khởi tạo vị trí của các nút
     private void initButtons() {

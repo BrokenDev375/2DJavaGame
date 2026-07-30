@@ -59,9 +59,9 @@ public class GameCommandHandler implements KeyListener {
             }
             // === SAVE GAME ===
             if (code == KeyEvent.VK_F5) {
-                gp.getSaveManager().saveGame(gp);
+                boolean saved = gp.getSaveManager().saveGame(gp);
                 var msgUI = gp.getUiManager().get(MessageUI.class);
-                if (msgUI != null) msgUI.showTouchMessage("Game Saved!", null, gp);
+                if (msgUI != null) msgUI.showTouchMessage(saved ? "Game Saved!" : "Save Failed!", null, gp);
                 return;
             }
 

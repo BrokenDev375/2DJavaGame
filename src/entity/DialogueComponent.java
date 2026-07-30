@@ -22,10 +22,6 @@ final class DialogueComponent {
         currentSet = setIndex;
     }
 
-    int getCurrentSetIndex() {
-        return currentSet;
-    }
-
     String[] getCurrentSet() {
         return Arrays.copyOf(lines[currentSet], lines[currentSet].length);
     }

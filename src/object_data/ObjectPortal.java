@@ -4,17 +4,16 @@ import main.GamePanel;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Optional;
 
-public class ObjectPortal extends WorldObject {
+public class ObjectPortal extends WorldObject implements TeleportTarget {
 
     private BufferedImage firstFrame;
     private BufferedImage secondFrame;
     private int animCounter = 0;
     private final int frameDuration = 10;
 
-    private int targetMap;
-    private int targetWorldX;
-    private int targetWorldY;
+    private TeleportDestination teleportDestination;
 
     public ObjectPortal(GamePanel gp, int mapIndex) {
         super(gp);
@@ -30,21 +29,29 @@ public class ObjectPortal extends WorldObject {
     }
 
     public void setTarget(int mapIndex, int worldX, int worldY) {
-        this.targetMap = mapIndex;
-        this.targetWorldX = worldX;
-        this.targetWorldY = worldY;
+        setTeleportDestination(new TeleportDestination(mapIndex, worldX, worldY));
     }
 
     public int getTargetMap() {
-        return targetMap;
+        return teleportDestination == null ? 0 : teleportDestination.mapId();
     }
 
     public int getTargetWorldX() {
-        return targetWorldX;
+        return teleportDestination == null ? 0 : teleportDestination.worldX();
     }
 
     public int getTargetWorldY() {
-        return targetWorldY;
+        return teleportDestination == null ? 0 : teleportDestination.worldY();
+    }
+
+    @Override
+    public void setTeleportDestination(TeleportDestination destination) {
+        this.teleportDestination = destination;
+    }
+
+    @Override
+    public Optional<TeleportDestination> teleportDestination() {
+        return Optional.ofNullable(teleportDestination);
     }
 
     @Override
@@ -53,7 +60,7 @@ public class ObjectPortal extends WorldObject {
     }
 
     @Override
-    public BufferedImage getRenderImage() {
+    protected BufferedImage getRenderImage() {
         int idx = (animCounter / frameDuration) % 2;
         if (idx == 0) return firstFrame != null ? firstFrame : secondFrame;
         return secondFrame != null ? secondFrame : firstFrame;

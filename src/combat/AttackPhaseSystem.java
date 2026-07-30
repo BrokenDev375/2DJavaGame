@@ -34,7 +34,7 @@ public final class AttackPhaseSystem {
 
         if (!component.isAttacking()) return;
 
-        if (component.getAttackPhase() == 2) {
+        if (component.attackPhase() == 2) {
             alignAttackBox(component, owner);
         }
 
@@ -61,7 +61,7 @@ public final class AttackPhaseSystem {
     }
 
     private static void advancePhase(CombatComponent component, CombatContext owner) {
-        int phase = component.getAttackPhase();
+        int phase = component.attackPhase();
         if (phase == 1) {
             component.setAttackPhaseInternal(2);
             component.setPhaseTimerFrames(component.getActiveFrames());
@@ -92,7 +92,7 @@ public final class AttackPhaseSystem {
         int bodyWidth = body.width;
         int bodyHeight = body.height;
 
-        Direction direction = resolveAttackDirection(owner);
+        Direction direction = resolveAttackDirection(component, owner);
 
         int attackX;
         int attackY;
@@ -119,11 +119,11 @@ public final class AttackPhaseSystem {
         component.placeAttackBox(attackX, attackY);
     }
 
-    private static Direction resolveAttackDirection(CombatContext owner) {
+    private static Direction resolveAttackDirection(CombatComponent component, CombatContext owner) {
         Direction direction = owner.getDirection();
         if (owner instanceof Entity entity
                 && entity instanceof Monster
-                && entity.isAttacking()
+                && component.isAttacking()
                 && entity.getAttackDirection() != null) {
             direction = entity.getAttackDirection();
         }

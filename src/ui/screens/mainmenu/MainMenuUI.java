@@ -1,5 +1,6 @@
 package ui.screens.mainmenu;
 
+import game_data.LoadResult;
 import main.GamePanel;
 import main.GameState;
 import sound_manager.SoundManager;
@@ -124,11 +125,13 @@ public class MainMenuUI extends BaseUI {
                 SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
             }
             case 1 -> { // LOAD GAME
-                if (gp.getSaveManager() != null)
-                    gp.getSaveManager().loadGame(gp);
-
-                gp.setGameState(GameState.PLAY);
-                SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
+                if (gp.getSaveManager() != null) {
+                    LoadResult result = gp.getSaveManager().loadGame(gp);
+                    if (result == LoadResult.LOADED) {
+                        gp.setGameState(GameState.PLAY);
+                        SoundManager.getInstance().playMusic(SoundManager.SoundID.MUSIC_THEME);
+                    }
+                }
             }
             case 2 -> System.exit(0);      // QUIT
             case 3 -> showingCredits = true; //CREDITS

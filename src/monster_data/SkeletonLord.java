@@ -161,11 +161,13 @@ public class SkeletonLord extends Monster {
     }
 
     @Override
-    public void onDeath() {
-        super.onDeath();
-
-        if (gp != null && gp.getObjectManager() != null) {
-            gp.getObjectManager().spawnSword(this.getMapIndex(), this.getWorldX(), this.getWorldY());
-        }
+    protected MonsterDeathResult createDeathResult() {
+        return super.createDeathResult()
+                .withDrop(object_data.ObjectDropRequest.of(
+                        object_data.WorldObjectType.SWORD,
+                        getMapIndex(),
+                        getWorldX(),
+                        getWorldY()
+                ));
     }
 }

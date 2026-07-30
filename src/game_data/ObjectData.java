@@ -6,6 +6,7 @@ package game_data;
 public class ObjectData {
     private String type;
     private int worldX, worldY;
+    private int spawnX, spawnY;
     private boolean active;
 
     private ObjectData() {
@@ -13,10 +14,16 @@ public class ObjectData {
     }
 
     public ObjectData(String type, int worldX, int worldY, boolean active) {
+        this(type, worldX, worldY, active, 0, 0);
+    }
+
+    public ObjectData(String type, int worldX, int worldY, boolean active, int spawnX, int spawnY) {
         this.type = type;
         this.worldX = worldX;
         this.worldY = worldY;
         this.active = active;
+        this.spawnX = spawnX;
+        this.spawnY = spawnY;
     }
 
     public String getType() {
@@ -33,5 +40,17 @@ public class ObjectData {
 
     public boolean isActive() {
         return active;
+    }
+
+    public int getSpawnX() {
+        return spawnX;
+    }
+
+    public int getSpawnY() {
+        return spawnY;
+    }
+
+    public boolean hasSpawnIdentity() {
+        return spawnX != 0 || spawnY != 0;
     }
 }

@@ -23,56 +23,56 @@ public class CombatComponent {
     private final Rectangle attackBox = new Rectangle();
     private final Set<Object> hitThisSwing = new HashSet<>();
 
-    public void setAttackBoxSize(int width, int height) {
+    void setAttackBoxSize(int width, int height) {
         this.attackWidth = Math.max(1, width);
         this.attackHeight = Math.max(1, height);
         this.attackBox.setSize(this.attackWidth, this.attackHeight);
     }
 
-    public boolean wasHitThisSwing(Object target) {
+    boolean wasHitThisSwing(Object target) {
         return hitThisSwing.contains(target);
     }
 
-    public void markHit(Object target) {
+    void markHit(Object target) {
         if (target != null) hitThisSwing.add(target);
     }
 
-    public void clearHitThisSwing() {
+    void clearHitThisSwing() {
         hitThisSwing.clear();
     }
 
-    public void setTimingFrames(int windup, int active, int recover, int cooldown) {
+    void setTimingFrames(int windup, int active, int recover, int cooldown) {
         this.windupFrames = Math.max(0, windup);
         this.activeFrames = Math.max(0, active);
         this.recoverFrames = Math.max(0, recover);
         this.cooldownFrames = Math.max(0, cooldown);
     }
 
-    public int getKnockbackForce() {
+    int getKnockbackForce() {
         return knockbackForce;
     }
 
-    public void setKnockbackForce(int force) {
+    void setKnockbackForce(int force) {
         this.knockbackForce = Math.max(0, force);
     }
 
-    public boolean isAttacking() {
+    boolean isAttacking() {
         return attacking;
     }
 
-    public boolean isAttackActive() {
+    boolean isAttackActive() {
         return attacking && attackPhase == 2;
     }
 
-    public int getAttackPhase() {
+    int attackPhase() {
         return attackPhase;
     }
 
-    public boolean isAttackBoxActive() {
+    boolean isAttackBoxActive() {
         return attackBox.width > 0 && attackBox.height > 0;
     }
 
-    public boolean attackIntersects(Rectangle targetBody) {
+    boolean attackIntersects(Rectangle targetBody) {
         return targetBody != null && isAttackBoxActive() && attackBox.intersects(targetBody);
     }
 
@@ -108,16 +108,8 @@ public class CombatComponent {
         attackBox.setBounds(0, 0, 0, 0);
     }
 
-    boolean getIsAttacking() {
-        return attacking;
-    }
-
     void setIsAttacking(boolean value) {
         attacking = value;
-    }
-
-    int getAttackPhaseInternal() {
-        return attackPhase;
     }
 
     void setAttackPhaseInternal(int value) {
@@ -140,20 +132,19 @@ public class CombatComponent {
         cooldownCounterFrames = value;
     }
 
-    @SuppressWarnings("Unused")
-    public static void setCooldown(CombatComponent component, int frames) {
+    static void setCooldown(CombatComponent component, int frames) {
         component.setCooldownCounterFrames(Math.max(0, frames));
     }
 
-    public static int getCooldown(CombatComponent component) {
+    static int getCooldown(CombatComponent component) {
         return component.getCooldownCounterFrames();
     }
 
-    public static int attackWidth(CombatComponent component) {
+    static int attackWidth(CombatComponent component) {
         return component.getAttackWidth();
     }
 
-    public static int attackHeight(CombatComponent component) {
+    static int attackHeight(CombatComponent component) {
         return component.getAttackHeight();
     }
 }

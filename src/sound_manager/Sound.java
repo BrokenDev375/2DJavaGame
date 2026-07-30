@@ -1,7 +1,10 @@
 
 package sound_manager;
 
+import main.DebugLog;
+
 import javax.sound.sampled.*;
+import java.io.IOException;
 import java.net.URL;
 
 
@@ -9,12 +12,20 @@ public class Sound {
     // Audio clip object
     private Clip clip;
     public void setFile(URL url) {
-        try {
-            AudioInputStream ais = AudioSystem.getAudioInputStream(url);
-            clip = AudioSystem.getClip();
-            clip.open(ais);
-        } catch (Exception e) {
-            e.printStackTrace(); // Print error if file cannot be loaded
+        if (url == null) {
+            clip = null;
+            DebugLog.error("[Sound] Missing audio URL.", null);
+            return;
+        }
+
+        try (AudioInputStream ais = AudioSystem.getAudioInputStream(url)) {
+            Clip loadedClip = AudioSystem.getClip();
+            loadedClip.open(ais);
+            clip = loadedClip;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException
+                 | IllegalArgumentException | SecurityException e) {
+            clip = null;
+            DebugLog.error("[Sound] Failed to load audio file: " + url, e);
         }
     }
     public void play() {

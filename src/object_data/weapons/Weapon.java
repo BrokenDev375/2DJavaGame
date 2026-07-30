@@ -31,7 +31,7 @@ public abstract class Weapon extends WorldObject {
     public abstract int atkFlat();
 
     public void loadSprite() {
-        setStaticImage(setup("/object/" + spriteKey(), gp.tileSize, gp.tileSize));
+        useStaticImage(setup("/object/" + spriteKey(), gp.tileSize, gp.tileSize));
     }
 
     public int computeDamage(Player p, Entity target) {

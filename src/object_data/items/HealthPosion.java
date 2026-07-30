@@ -12,7 +12,7 @@ public class HealthPosion extends WorldObject {
         setMapIndex(mapIndex);
         setName("healthposion");
         setSize(gp.tileSize, gp.tileSize);
-        setStaticImage(setup("/object/healthposion", getWidth(), getHeight()));
+        useStaticImage(setup("/object/healthposion", getWidth(), getHeight()));
         setCollidable(false);
 
         int t = gp.tileSize / 8;

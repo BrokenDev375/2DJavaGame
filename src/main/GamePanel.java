@@ -4,8 +4,14 @@ import javax.swing.JPanel;
 import java.awt.*;
 
 import game_data.SaveManager;
+import entity.Entity;
 import entity_manager.EntityManager;
 import entity_manager.ObjectManager;
+import object_data.WorldObject;
+import object_data.WorldObjectFactory;
+import object_data.weapons.WeaponFactory;
+import object_data.weapons.WeaponType;
+import tile.Chunk;
 import tile.ChunkManager;
 import tile.TileManager;
 import input_manager.InputController;
@@ -21,24 +27,30 @@ import ui.screens.gameover.GameOverUI;
 import ui.screens.mainmenu.MainMenuUI;
 import ui.screens.pause.PauseOverlay;
 
+import java.util.List;
 
-public class GamePanel extends JPanel {
+
+public class GamePanel extends JPanel implements WorldQuery, RenderContext {
+    private final GameConfig config = GameConfig.defaults();
+
     // ===== SCREEN SETTING =====
-    public final int originalTileSize = 16; // 16x16 tile
-    final int scale = 3;
-    public final int tileSize = originalTileSize * scale; // 48x48 tile
-    public final int maxScreenCol = 25; // width
-    public final int maxScreenRow = 14; // height
-    public final int screenWidth = tileSize * maxScreenCol;  // 786 pixels
-    public final int screenHeight = tileSize * maxScreenRow; // 576 pixels
+    public final int originalTileSize = config.originalTileSize(); // 16x16 tile
+    final int scale = config.scale();
+    public final int tileSize = config.tileSize(); // 48x48 tile
+    public final int maxScreenCol = config.maxScreenCol(); // width
+    public final int maxScreenRow = config.maxScreenRow(); // height
+    public final int screenWidth = config.screenWidth();
+    public final int screenHeight = config.screenHeight();
 
     // ===== WORLD SETTING =====
-    public final int maxWorldCol = 32 * 3;
-    public final int maxWorldRow = 32 * 3;
-    public final int chunkSize = 32;
+    public final int maxWorldCol = config.maxWorldCol();
+    public final int maxWorldRow = config.maxWorldRow();
+    public final int chunkSize = config.chunkSize();
 
     // ===== SYSTEM =====
-    private final TileManager tileM = new TileManager(this);
+    private final UtilityTool uTool = new UtilityTool();
+    private final AssetLoader assetLoader = new AssetLoader(uTool);
+    private final TileManager tileM = new TileManager(this, assetLoader);
     private final ChunkManager chunkM = new ChunkManager(chunkSize, this);
     private final InputManager input;
 
@@ -46,14 +58,16 @@ public class GamePanel extends JPanel {
     private final SaveManager saveManager = new SaveManager();
 
     // ===== OTHERS =====
-    private final Camera camera = new Camera(this);
+    private final Camera camera = new Camera(config);
     private CollisionChecker cChecker;
-    private final UtilityTool uTool = new UtilityTool();
-    private int frameCounter = 0;
+    private final WeaponFactory weaponFactory = new WeaponFactory(this);
+    private final WorldObjectFactory worldObjectFactory = new WorldObjectFactory(this, weaponFactory);
     private Interact iR;
     // ===== ENTITY MANAGER =====
     private EntityManager em;
     private final ObjectManager om = new ObjectManager(this);
+    private GameSession session;
+    private GameRenderer renderer;
 
     // ===== UI SYSTEM =====
     private final UIManager uiManager = new UIManager();
@@ -61,8 +75,7 @@ public class GamePanel extends JPanel {
     public static final float SCALE = 3f;
 
     // ===== MAP =====
-    private final int numMaps = 3;
-    private int currentMap = 0;
+    private final int numMaps = config.numMaps();
 
     // ===== GAME STATE =====
     private final GameStateManager gsm = new GameStateManager();
@@ -93,27 +106,52 @@ public class GamePanel extends JPanel {
         // Core managers
         em = new EntityManager(this, input.getKeyController());
         resetCollisionChecker();
+        session = new GameSession(
+                chunkM,
+                em,
+                om,
+                uiManager,
+                gsm,
+                uTool,
+                mapIndex -> weaponFactory.create(WeaponType.SWORD, mapIndex),
+                this::resetCollisionChecker,
+                this::resetInteractionRouter
+        );
+        renderer = new GameRenderer(tileM, chunkM, om, em, uiManager, gsm, session);
         resetInteractionRouter();
 
     }
 
 
     public void setupGame() {
-        em.getPlayer().setDefaultValues();
-        chunkM.loadMap("map3");
-        gsm.setState(GameState.START);
+        session.setupGame();
     }
 
     public InputController getInputController() {
         return input.getKeyController();
     }
 
+    @Override
+    public GameConfig getConfig() {
+        return config;
+    }
+
     public int getFrameCounter() {
-        return frameCounter;
+        return session == null ? 0 : session.getFrameCounter();
+    }
+
+    @Override
+    public int frameCounter() {
+        return getFrameCounter();
     }
 
     public int getCurrentMap() {
-        return currentMap;
+        return session == null ? 0 : session.getCurrentMap();
+    }
+
+    @Override
+    public int currentMap() {
+        return getCurrentMap();
     }
 
     public int getNumMaps() {
@@ -129,10 +167,17 @@ public class GamePanel extends JPanel {
     }
 
     public void setCurrentMap(int mapIndex) {
-        currentMap = mapIndex;
+        if (session != null) {
+            session.setCurrentMap(mapIndex);
+        }
     }
 
     public CollisionChecker getCollisionChecker() {
+        return cChecker;
+    }
+
+    @Override
+    public CollisionChecker collisionChecker() {
         return cChecker;
     }
 
@@ -144,7 +189,16 @@ public class GamePanel extends JPanel {
         return uTool;
     }
 
+    public AssetLoader getAssetLoader() {
+        return assetLoader;
+    }
+
     public Camera getCamera() {
+        return camera;
+    }
+
+    @Override
+    public Camera camera() {
         return camera;
     }
 
@@ -164,8 +218,36 @@ public class GamePanel extends JPanel {
         return om;
     }
 
+    public WeaponFactory getWeaponFactory() {
+        return weaponFactory;
+    }
+
+    public WorldObjectFactory getWorldObjectFactory() {
+        return worldObjectFactory;
+    }
+
     public SaveManager getSaveManager() {
         return saveManager;
+    }
+
+    @Override
+    public List<WorldObject> objectsOnMap(int mapId) {
+        return om.getObjects(mapId);
+    }
+
+    @Override
+    public Entity player() {
+        return em == null ? null : em.getPlayer();
+    }
+
+    @Override
+    public Iterable<Chunk> activeChunks() {
+        return chunkM.getActiveChunks();
+    }
+
+    @Override
+    public boolean isTileCollidable(int tileNum) {
+        return tileM.isTileCollidable(tileNum);
     }
 
     private void resetCollisionChecker() {
@@ -178,31 +260,8 @@ public class GamePanel extends JPanel {
         }
     }
 
-    private void tickFrameCounter() {
-        frameCounter++;
-        if (frameCounter >= 1_000_000) {
-            frameCounter = 0;
-        }
-    }
-
     public void restartGame() {
-        setCurrentMap(3);
-        chunkM.loadMap("map3");
-        em.getPlayer().setDefaultValues();
-        em.getPlayer().refillHP();
-        em.getPlayer().setMapIndex(getCurrentMap());
-        em.getPlayer().setLevel(1);
-        em.getPlayer().setExp(0);
-
-        object_data.weapons.Weapon defaultWeapon = new object_data.weapons.Sword(this, getCurrentMap());
-        em.getPlayer().equipWeapon(defaultWeapon);
-        if (om != null) {
-            om.reloadMapObjects(getCurrentMap());
-        }
-        resetCollisionChecker();
-        resetInteractionRouter();
-        em.update(getCurrentMap());
-        gsm.setState(GameState.PLAY);
+        session.restartGame();
     }
 
     public void startGameThread() {
@@ -212,27 +271,7 @@ public class GamePanel extends JPanel {
 
     // ===== UPDATE LOOP =====
     public void update() {
-        switch (gsm.getState()) {
-            case START, GAME_OVER -> uiManager.update(gsm.getState());
-
-            case PLAY -> {
-                chunkM.updateChunks(em.getPlayer().getWorldX(), em.getPlayer().getWorldY());
-                setCurrentMap(uTool.mapNameToIndex(chunkM.getMapPath()));
-                em.update(getCurrentMap());
-                if (em.getPlayer() != null && em.getPlayer().isDead()) {
-                    gsm.setState(GameState.GAME_OVER);
-                    return;
-                }
-
-                uiManager.update(GameState.PLAY);
-            }
-            case DIALOGUE -> {
-                uiManager.update(gsm.getState());
-            }
-            case PAUSE -> {
-                uiManager.update(GameState.PAUSE);
-            }
-        }
+        session.update();
     }
 
     // ===== DRAW LOOP =====
@@ -241,15 +280,8 @@ public class GamePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
 
-        // Vẽ thế giới + entity
-        if (gsm.getState() != GameState.START)
-            tileM.draw(g2, chunkM);
+        renderer.draw(g2);
 
-        om.draw(g2, getCurrentMap() , em.getPlayer());
-        em.draw(g2, getCurrentMap());
-        uiManager.draw(g2, gsm.getState());
-
-        tickFrameCounter();
         g2.dispose();
     }
 }

@@ -1,52 +1,56 @@
 package ui.utilz;
 
+import main.AssetLoadException;
+import main.AssetLoader;
+import main.DebugLog;
+
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import javax.imageio.ImageIO;
+import java.util.Arrays;
+import java.util.Optional;
 
 public class LoadSave {
+    private static final AssetLoader ASSET_LOADER = AssetLoader.defaultLoader();
+    private static final int FALLBACK_ATLAS_SIZE = 96;
 
     public static final String PAUSE_BACKGROUND = "pause_background.png";
     public static final String SOUND_BUTTONS = "sound_button.png";
     public static final String URM_BUTTONS = "urm_buttons.png";
 
-    public static final String MENU_BACKGROUND  = "menu_background.png";
-    public static final String BACKGROUND_MENU  = "background_menu.png";
-    public static final String BUTTON_ATLAS     = "button_atlas.png";
+    public static final String MENU_BACKGROUND = "menu_background.png";
+    public static final String BACKGROUND_MENU = "background_menu.png";
+    public static final String BUTTON_ATLAS = "button_atlas.png";
+
+    public static Optional<BufferedImage> findSpriteAtlas(String fileName) {
+        for (String path : searchPathsFor(fileName)) {
+            try {
+                Optional<BufferedImage> image = ASSET_LOADER.findImage(path, "LoadSave");
+                if (image.isPresent()) {
+                    return image;
+                }
+            } catch (AssetLoadException e) {
+                DebugLog.error(e.getMessage(), e);
+            }
+        }
+        return Optional.empty();
+    }
 
     public static BufferedImage GetSpriteAtlas(String fileName) {
-        BufferedImage img = null;
+        Optional<BufferedImage> image = findSpriteAtlas(fileName);
+        if (image.isPresent()) {
+            return image.get();
+        }
 
-        // Các đường dẫn có thể chứa ảnh
-        String[] searchPaths = {
+        DebugLog.error("[LoadSave] Missing sprite atlas: " + fileName
+                + " searched " + Arrays.toString(searchPathsFor(fileName)), null);
+        return AssetLoader.placeholderImage(FALLBACK_ATLAS_SIZE, FALLBACK_ATLAS_SIZE);
+    }
+
+    private static String[] searchPathsFor(String fileName) {
+        return new String[] {
                 "/ui/" + fileName,
                 "/object/" + fileName,
                 "/player/" + fileName,
                 "/" + fileName
         };
-
-        InputStream is = null;
-
-        for (String path : searchPaths) {
-            try {
-                is = LoadSave.class.getResourceAsStream(path);
-                if (is != null) {
-                    img = ImageIO.read(is);
-                    return img;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-        return null;
     }
 }

@@ -24,21 +24,31 @@ public class NPCManager {
     }
 
     public void addNPC(Entity npc) {
-        npcsByMap.computeIfAbsent(npc.getMapIndex(), k -> new ArrayList<>()).add(npc);
+        npcsOnMap(npc.getMapIndex()).add(npc);
     }
 
     public List<Entity> getNPCs(int mapId) {
-        return npcsByMap.getOrDefault(mapId, Collections.emptyList());
+        return Collections.unmodifiableList(npcsByMap.getOrDefault(mapId, Collections.emptyList()));
+    }
+
+    public Optional<Entity> npcAt(int mapId, int index) {
+        List<Entity> npcs = npcsByMap.get(mapId);
+        if (npcs == null || index < 0 || index >= npcs.size()) return Optional.empty();
+        return Optional.of(npcs.get(index));
+    }
+
+    private List<Entity> npcsOnMap(int mapId) {
+        return npcsByMap.computeIfAbsent(mapId, k -> new ArrayList<>());
     }
 
     public void update(int mapId) {
-        for (Entity npc : getNPCs(mapId)) {
+        for (Entity npc : npcsByMap.getOrDefault(mapId, Collections.emptyList())) {
             npc.update();
         }
     }
 
     public void draw(java.awt.Graphics2D g2, int mapId) {
-        for (Entity npc : getNPCs(mapId)) {
+        for (Entity npc : npcsByMap.getOrDefault(mapId, Collections.emptyList())) {
             npc.draw(g2);
         }
     }

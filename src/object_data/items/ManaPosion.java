@@ -12,7 +12,7 @@ public class ManaPosion extends WorldObject {
         setMapIndex(mapIndex);
         setName("manaposion");
         setSize(gp.tileSize, gp.tileSize);
-        setStaticImage(setup("/object/manaposion", getWidth(), getHeight()));
+        useStaticImage(setup("/object/manaposion", getWidth(), getHeight()));
         setCollidable(false);
 
         int t = gp.tileSize / 8;

@@ -1,15 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package interact_manager.object_interact;
 
 import object_data.WorldObject;
 import player_manager.Player;
 import input_manager.InputController;
+import main.CollisionChecker;
 import main.GamePanel;
 import ui.effects.MessageUI;
-import java.util.List;
+import java.util.Optional;
 
 public class ObjectInteract {
 
@@ -26,23 +23,27 @@ public class ObjectInteract {
     }
 
     public void handle(int index) {
-        if (index != 999) {
-            List<WorldObject> objects = gp.getObjectManager().getObjects(gp.getCurrentMap());
-            if (index >= 0 && index < objects.size()) {
-                WorldObject obj = objects.get(index);
-                if (obj != null && obj.isOnMap(gp.getCurrentMap())) {
-                    IObjectInteraction handler = ObjectInteractionFactory.getHandler(obj.getName());
-                    if (handler != null) {
-                        handler.interact(gp, player, input, obj);
-                    } else if (msgUI != null) {
-                        msgUI.showTouchMessage("Unknown object: " + obj.getName(), obj, gp);
-                    }
-                }
-            }
-        } else {
-
+        if (index == CollisionChecker.NO_HIT) {
             player.setInteracting(false);
+            return;
+        }
 
+        Optional<WorldObject> touchedObject = gp.getObjectManager().objectAt(gp.getCurrentMap(), index);
+        if (touchedObject.isEmpty()) {
+            player.setInteracting(false);
+            return;
+        }
+
+        WorldObject obj = touchedObject.get();
+        if (!obj.isOnMap(gp.getCurrentMap())) {
+            return;
+        }
+
+        Optional<IObjectInteraction> handler = ObjectInteractionFactory.getHandler(obj);
+        if (handler.isPresent()) {
+            handler.get().interact(new InteractionContext(gp, player, input, obj));
+        } else if (msgUI != null) {
+            msgUI.showTouchMessage("Unknown object: " + obj.getName(), obj, gp);
         }
     }
 }

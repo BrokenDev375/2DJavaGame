@@ -3,6 +3,7 @@ package main;
 import entity.Direction;
 import entity.Entity;
 import object_data.WorldObject;
+import object_data.WorldObjectType;
 import tile.Chunk;
 import world.WorldBody;
 
@@ -11,23 +12,28 @@ import java.util.List;
 
 public class CollisionChecker {
 
-    GamePanel gp;
-    public CollisionChecker(GamePanel gp){
-        this.gp = gp;
+    public static final int NO_HIT = -1;
+
+    private final WorldQuery world;
+    private final GameConfig config;
+
+    public CollisionChecker(WorldQuery world){
+        this.world = world;
+        this.config = world.getConfig();
     }
     
     //get tile number from chunk.tmx file 
     private int getTileNumAt(int worldX, int worldY){
-        int tileCol = worldX / gp.tileSize;
-        int tileRow = worldY / gp.tileSize;
+        int tileCol = worldX / config.tileSize();
+        int tileRow = worldY / config.tileSize();
 
-        int chunkX = tileCol / gp.chunkSize;
-        int chunkY = tileRow / gp.chunkSize;
+        int chunkX = tileCol / config.chunkSize();
+        int chunkY = tileRow / config.chunkSize();
 
-        int localCol = tileCol % gp.chunkSize;
-        int localRow = tileRow % gp.chunkSize;
+        int localCol = tileCol % config.chunkSize();
+        int localRow = tileRow % config.chunkSize();
 
-        for(Chunk c : gp.getChunkManager().getActiveChunks()){
+        for(Chunk c : world.activeChunks()){
             if(c.getChunkX() == chunkX && c.getChunkY() == chunkY){
                 if(localRow >= 0 && localRow < c.getSize() &&
                    localCol >= 0 && localCol < c.getSize()){
@@ -39,7 +45,7 @@ public class CollisionChecker {
     }
 
     private boolean overlaps(WorldBody mover, int nextWorldX, int nextWorldY, WorldBody target) {
-        return mover.getSolidAreaAt(nextWorldX, nextWorldY).intersects(target.getSolidAreaWorld());
+        return CollisionGeometry.overlaps(mover, nextWorldX, nextWorldY, target);
     }
 
     public void checkTile(Entity entity,int nextX, int nextY){
@@ -54,33 +60,33 @@ public class CollisionChecker {
         // Check X
         tileNum1 = getTileNumAt(entityLeftWorldX, entityTopWorldY);
         tileNum2 = getTileNumAt(entityLeftWorldX, entityBotWorldY);
-        if (gp.getTileManager().isTileCollidable(tileNum1) || gp.getTileManager().isTileCollidable(tileNum2)) {
+        if (world.isTileCollidable(tileNum1) || world.isTileCollidable(tileNum2)) {
             entity.markCollisionX();
         }
 
         tileNum1 = getTileNumAt(entityRightWorldX, entityTopWorldY);
         tileNum2 = getTileNumAt(entityRightWorldX, entityBotWorldY);
-        if (gp.getTileManager().isTileCollidable(tileNum1) || gp.getTileManager().isTileCollidable(tileNum2)) {
+        if (world.isTileCollidable(tileNum1) || world.isTileCollidable(tileNum2)) {
             entity.markCollisionX();
         }
 
         // Check Y
         tileNum1 = getTileNumAt(entityLeftWorldX, entityTopWorldY);
         tileNum2 = getTileNumAt(entityRightWorldX, entityTopWorldY);
-        if (gp.getTileManager().isTileCollidable(tileNum1) || gp.getTileManager().isTileCollidable(tileNum2)) {
+        if (world.isTileCollidable(tileNum1) || world.isTileCollidable(tileNum2)) {
             entity.markCollisionY();
         }
 
         tileNum1 = getTileNumAt(entityLeftWorldX, entityBotWorldY);
         tileNum2 = getTileNumAt(entityRightWorldX, entityBotWorldY);
-        if (gp.getTileManager().isTileCollidable(tileNum1) || gp.getTileManager().isTileCollidable(tileNum2)) {
+        if (world.isTileCollidable(tileNum1) || world.isTileCollidable(tileNum2)) {
             entity.markCollisionY();
         }
     }
     // this check player -> entity 
     // this check player -> entity (NPC / Monster)
     public int checkEntity(Entity entity , List<Entity> targets, int nextX, int nextY){
-        int index = 999;
+        int index = NO_HIT;
 
         // === tính offset theo hướng nhìn để va chạm dễ bắt hơn ===
         int offsetX = 0, offsetY = 0;
@@ -104,18 +110,19 @@ public class CollisionChecker {
 
     // this check entity -> player 
     public void checkPlayer(Entity entity , int nextX ,int nextY){
-        if (overlaps(entity, nextX, nextY, gp.getEntityManager().getPlayer())) {
+        Entity player = world.player();
+        if (player != null && overlaps(entity, nextX, nextY, player)) {
             entity.markCollision();
         }
     }
     // return object touched
     public int checkWorldObject(Entity mover, List<WorldObject> objects, int nextDX, int nextDY) {
-        if (mover == null || objects == null || objects.isEmpty()) return 999;
+        if (mover == null || objects == null || objects.isEmpty()) return NO_HIT;
 
         int nextWorldX = mover.getWorldX() + nextDX;
         int nextWorldY = mover.getWorldY() + nextDY;
 
-        int interactedIndex = 999;
+        int interactedIndex = NO_HIT;
 
         for (int i = 0; i < objects.size(); i++) {
             WorldObject obj = objects.get(i);
@@ -125,11 +132,11 @@ public class CollisionChecker {
                 if (obj.isCollidable()) mover.markCollision();
 
                 // Ưu tiên door hơn các object khác
-                if (interactedIndex == 999) {
+                if (interactedIndex == NO_HIT) {
                     interactedIndex = i;
                 } else {
                     WorldObject current = objects.get(interactedIndex);
-                    if (!current.isNamed("door") && obj.isNamed("door")) {
+                    if (!current.isType(WorldObjectType.DOOR) && obj.isType(WorldObjectType.DOOR)) {
                         interactedIndex = i; // ưu tiên door
                     }
                 }

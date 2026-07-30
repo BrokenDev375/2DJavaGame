@@ -1,93 +1,104 @@
 package player_manager;
 
 import entity.Direction;
-import entity.Entity;
-import main.GamePanel;
+import entity.EntitySpriteManager;
+import entity.EntitySpriteProfile;
+import main.AssetLoadException;
+import main.DebugLog;
+import main.GameConfig;
 
 import java.awt.image.BufferedImage;
+import java.util.Objects;
+import java.util.Optional;
 
 public class PlayerSpriteManager {
-    private final GamePanel gp;
+    private final GameConfig config;
+    private final EntitySpriteManager spriteLoader;
 
-    public PlayerSpriteManager(GamePanel gp) {
-        this.gp = gp;
+    public PlayerSpriteManager(GameConfig config) {
+        this(config, new EntitySpriteManager());
     }
 
-    public void loadSprites(Entity player) {
-        loadMoveSprites(player);
-        loadAttackSprites(player, "sword");
+    public PlayerSpriteManager(GameConfig config, EntitySpriteManager spriteLoader) {
+        this.config = config;
+        this.spriteLoader = Objects.requireNonNull(spriteLoader, "spriteLoader");
     }
 
-    public void loadMoveSprites(Entity player) {
-        player.setMoveSprites(
-                Direction.UP,
-                player.setup("/player/boy_up_1", gp.tileSize, gp.tileSize),
-                player.setup("/player/boy_up_2", gp.tileSize, gp.tileSize)
-        );
-
-        player.setMoveSprites(
-                Direction.DOWN,
-                player.setup("/player/boy_down_1", gp.tileSize, gp.tileSize),
-                player.setup("/player/boy_down_2", gp.tileSize, gp.tileSize)
-        );
-
-        player.setMoveSprites(
-                Direction.LEFT,
-                player.setup("/player/boy_left_1", gp.tileSize, gp.tileSize),
-                player.setup("/player/boy_left_2", gp.tileSize, gp.tileSize)
-        );
-
-        player.setMoveSprites(
-                Direction.RIGHT,
-                player.setup("/player/boy_right_1", gp.tileSize, gp.tileSize),
-                player.setup("/player/boy_right_2", gp.tileSize, gp.tileSize)
-        );
+    public EntitySpriteProfile loadSprites() {
+        return loadMoveSprites().merge(loadAttackSprites("sword"));
     }
 
-    public void loadAttackSprites(Entity player, String weaponKey) {
+    public EntitySpriteProfile loadMoveSprites() {
+        int tileSize = config.tileSize();
+        return new EntitySpriteProfile()
+                .move(
+                        Direction.UP,
+                        spriteLoader.loadSprite("/player/boy_up_1", tileSize, tileSize),
+                        spriteLoader.loadSprite("/player/boy_up_2", tileSize, tileSize)
+                )
+                .move(
+                        Direction.DOWN,
+                        spriteLoader.loadSprite("/player/boy_down_1", tileSize, tileSize),
+                        spriteLoader.loadSprite("/player/boy_down_2", tileSize, tileSize)
+                )
+                .move(
+                        Direction.LEFT,
+                        spriteLoader.loadSprite("/player/boy_left_1", tileSize, tileSize),
+                        spriteLoader.loadSprite("/player/boy_left_2", tileSize, tileSize)
+                )
+                .move(
+                        Direction.RIGHT,
+                        spriteLoader.loadSprite("/player/boy_right_1", tileSize, tileSize),
+                        spriteLoader.loadSprite("/player/boy_right_2", tileSize, tileSize)
+                );
+    }
+
+    public EntitySpriteProfile loadAttackSprites(String weaponKey) {
         final String key = (weaponKey == null || weaponKey.isEmpty())
                 ? "sword"
                 : weaponKey.toLowerCase();
 
-        boolean ok = tryLoadWeaponAttack(player, key);
-        if (!ok) {
-            tryLoadWeaponAttack(player, "sword");
+        Optional<EntitySpriteProfile> profile = tryLoadWeaponAttack(key);
+        if (profile.isPresent()) {
+            return profile.get();
         }
+        return tryLoadWeaponAttack("sword").orElseGet(EntitySpriteProfile::new);
     }
 
-    private boolean tryLoadWeaponAttack(Entity p, String key) {
-        BufferedImage up1 = safeSetup(p, "/player/boy_" + key + "_up_1", gp.tileSize, gp.tileSize * 2);
-        BufferedImage up2 = safeSetup(p, "/player/boy_" + key + "_up_2", gp.tileSize, gp.tileSize * 2);
+    private Optional<EntitySpriteProfile> tryLoadWeaponAttack(String key) {
+        int tileSize = config.tileSize();
+        Optional<BufferedImage> up1 = safeSetup("/player/boy_" + key + "_up_1", tileSize, tileSize * 2);
+        Optional<BufferedImage> up2 = safeSetup("/player/boy_" + key + "_up_2", tileSize, tileSize * 2);
 
-        BufferedImage down1 = safeSetup(p, "/player/boy_" + key + "_down_1", gp.tileSize, gp.tileSize * 2);
-        BufferedImage down2 = safeSetup(p, "/player/boy_" + key + "_down_2", gp.tileSize, gp.tileSize * 2);
+        Optional<BufferedImage> down1 = safeSetup("/player/boy_" + key + "_down_1", tileSize, tileSize * 2);
+        Optional<BufferedImage> down2 = safeSetup("/player/boy_" + key + "_down_2", tileSize, tileSize * 2);
 
-        BufferedImage left1 = safeSetup(p, "/player/boy_" + key + "_left_1", gp.tileSize * 2, gp.tileSize);
-        BufferedImage left2 = safeSetup(p, "/player/boy_" + key + "_left_2", gp.tileSize * 2, gp.tileSize);
+        Optional<BufferedImage> left1 = safeSetup("/player/boy_" + key + "_left_1", tileSize * 2, tileSize);
+        Optional<BufferedImage> left2 = safeSetup("/player/boy_" + key + "_left_2", tileSize * 2, tileSize);
 
-        BufferedImage right1 = safeSetup(p, "/player/boy_" + key + "_right_1", gp.tileSize * 2, gp.tileSize);
-        BufferedImage right2 = safeSetup(p, "/player/boy_" + key + "_right_2", gp.tileSize * 2, gp.tileSize);
+        Optional<BufferedImage> right1 = safeSetup("/player/boy_" + key + "_right_1", tileSize * 2, tileSize);
+        Optional<BufferedImage> right2 = safeSetup("/player/boy_" + key + "_right_2", tileSize * 2, tileSize);
         boolean allLoaded =
-                up1 != null && up2 != null &&
-                        down1 != null && down2 != null &&
-                        left1 != null && left2 != null &&
-                        right1 != null && right2 != null;
+                up1.isPresent() && up2.isPresent() &&
+                        down1.isPresent() && down2.isPresent() &&
+                        left1.isPresent() && left2.isPresent() &&
+                        right1.isPresent() && right2.isPresent();
 
-        if (allLoaded) {
-            p.setAttackSprites(Direction.UP, up1, up2);
-            p.setAttackSprites(Direction.DOWN, down1, down2);
-            p.setAttackSprites(Direction.LEFT, left1, left2);
-            p.setAttackSprites(Direction.RIGHT, right1, right2);
-        }
+        if (!allLoaded) return Optional.empty();
 
-        return allLoaded;
+        return Optional.of(new EntitySpriteProfile()
+                .attack(Direction.UP, up1.get(), up2.get())
+                .attack(Direction.DOWN, down1.get(), down2.get())
+                .attack(Direction.LEFT, left1.get(), left2.get())
+                .attack(Direction.RIGHT, right1.get(), right2.get()));
     }
 
-    private BufferedImage safeSetup(Entity p, String path, int w, int h) {
+    private Optional<BufferedImage> safeSetup(String path, int w, int h) {
         try {
-            return p.setup(path, w, h);
-        } catch (Throwable ignored) {
-            return null;
+            return spriteLoader.findSprite(path, w, h);
+        } catch (AssetLoadException e) {
+            DebugLog.error(e.getMessage(), e);
+            return Optional.empty();
         }
     }
 }

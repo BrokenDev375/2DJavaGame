@@ -12,7 +12,7 @@ public class ObjectKey extends WorldObject {
         setMapIndex(mapIndex);
         setName("key");
         setSize(gp.tileSize * 3 / 5, gp.tileSize * 3 / 5);
-        setStaticImage(setup("/object/key", getWidth(), getHeight()));
+        useStaticImage(setup("/object/key", getWidth(), getHeight()));
         setCollidable(false);
         setSolidArea(new Rectangle(
                 -gp.tileSize / 4,

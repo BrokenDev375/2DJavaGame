@@ -1,9 +1,9 @@
 package combat;
 
 import entity.Entity;
-import main.DebugLog;
 import monster_data.Monster;
 import player_manager.Player;
+import world.WorldBody;
 
 import java.util.List;
 
@@ -14,12 +14,20 @@ public final class CombatSystem {
         return component.isAttacking();
     }
 
-    public static int getPhase(CombatComponent component) {
-        return component.getAttackPhase();
-    }
-
     public static boolean isAttackActive(CombatComponent component) {
         return component.isAttackActive();
+    }
+
+    public static boolean isAttackHitting(CombatComponent component, WorldBody target) {
+        return isAttackActive(component) && target != null && component.attackIntersects(target.getSolidAreaWorld());
+    }
+
+    public static boolean tryLandAttackOn(CombatComponent component, WorldBody target) {
+        if (!isAttackHitting(component, target) || component.wasHitThisSwing(target)) {
+            return false;
+        }
+        component.markHit(target);
+        return true;
     }
 
     public static boolean canStartAttack(CombatComponent component) {
@@ -28,21 +36,6 @@ public final class CombatSystem {
 
     public static void startAttack(CombatComponent component, CombatContext owner) {
         if (owner == null) return;
-
-        if (owner instanceof Entity entity) {
-            if (entity.getGamePanel() != null) {
-                DebugLog.info("[ATTACK START] by=" + entity.getName()
-                        + " frame=" + entity.getGamePanel().getFrameCounter()
-                        + " phase=" + component.getAttackPhase());
-            } else {
-                DebugLog.info("[ATTACK START] by=" + entity.getName()
-                        + " phase=" + component.getAttackPhase());
-            }
-        } else {
-            DebugLog.info("[ATTACK START] by=" + owner.getClass().getSimpleName()
-                    + " phase=" + component.getAttackPhase());
-        }
-
         AttackPhaseSystem.start(component, owner);
     }
 
@@ -50,12 +43,20 @@ public final class CombatSystem {
         AttackPhaseSystem.update(component, owner);
     }
 
-    public static boolean wasHitThisSwing(CombatComponent component, Object target) {
-        return component.wasHitThisSwing(target);
+    public static void configureAttackBox(CombatComponent component, int width, int height) {
+        component.setAttackBoxSize(width, height);
     }
 
-    public static void markHitLanded(CombatComponent component, Object target) {
-        component.markHit(target);
+    public static void configureAttackTiming(CombatComponent component, int windup, int active, int recover, int cooldown) {
+        component.setTimingFrames(windup, active, recover, cooldown);
+    }
+
+    public static int getKnockbackForce(CombatComponent component) {
+        return component.getKnockbackForce();
+    }
+
+    public static void setKnockbackForce(CombatComponent component, int force) {
+        component.setKnockbackForce(force);
     }
 
     public static void updateStatus(Entity entity) {
@@ -68,11 +69,11 @@ public final class CombatSystem {
     }
 
     public static int[] computePlayerAttackKnockback(Player player) {
-        return KnockbackService.forPlayerAttack(player);
+        return player == null ? new int[]{0, 0} : player.attackKnockbackVector();
     }
 
     public static int[] computeMonsterAttackKnockback(Monster monster, Player player) {
-        return KnockbackService.forMonsterAttack(monster, player);
+        return monster == null ? new int[]{0, 0} : monster.attackKnockbackAgainst(player);
     }
 
     public static void resolvePlayerHits(Player player, List<Entity> monsters) {

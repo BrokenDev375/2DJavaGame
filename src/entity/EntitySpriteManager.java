@@ -1,32 +1,37 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package entity;
 
 import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import main.UtilityTool;
+import java.util.Objects;
+import java.util.Optional;
+import main.AssetLoadException;
+import main.AssetLoader;
+import main.DebugLog;
 
 public class EntitySpriteManager {
-    private final UtilityTool uTool = new UtilityTool();
+    private final AssetLoader assetLoader;
 
-    public EntitySpriteManager(){
-
+    public EntitySpriteManager() {
+        this(AssetLoader.defaultLoader());
     }
-    public void updateSprite(Entity e){
+
+    public EntitySpriteManager(AssetLoader assetLoader) {
+        this.assetLoader = Objects.requireNonNull(assetLoader, "assetLoader");
+    }
+
+    public void updateSprite(Entity e) {
         e.advanceSpriteFrame(8);
     }
-    public BufferedImage setup(String imagePath, int width , int height){
-        BufferedImage image = null;
 
+    public Optional<BufferedImage> findSprite(String imagePath, int width, int height) throws AssetLoadException {
+        return assetLoader.findScaledImage(imagePath, width, height, "EntitySpriteManager");
+    }
+
+    public BufferedImage loadSprite(String imagePath, int width, int height) {
         try {
-            image = ImageIO.read(getClass().getResourceAsStream(imagePath +".png"));
-            image = uTool.scaleImage(image, width , height);
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            return assetLoader.requireScaledImage(imagePath, width, height, "EntitySpriteManager");
+        } catch (AssetLoadException e) {
+            DebugLog.error(e.getMessage(), e);
+            return AssetLoader.placeholderImage(width, height);
         }
-        return image;
     }
 }

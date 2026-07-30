@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package interact_manager.object_interact;
 
 import interact_manager.object_interact.items.ManaPosionInteraction;
@@ -9,23 +5,42 @@ import interact_manager.object_interact.items.KeyInteraction;
 import interact_manager.object_interact.items.HealthPosionInteraction;
 import interact_manager.object_interact.items.DoorInteraction;
 import interact_manager.object_interact.weapon.*;
+import object_data.WorldObject;
+import object_data.WorldObjectType;
 
-public class ObjectInteractionFactory {
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
 
-    public static IObjectInteraction getHandler(String name) {
-        if (name == null) return null;
+public final class ObjectInteractionFactory {
+    private static final Map<WorldObjectType, IObjectInteraction> HANDLERS = createHandlers();
 
-        return switch (name.toLowerCase()) {
-            case "key" -> new KeyInteraction();
-            case "portal" -> new PortalInteraction();
-            case "door" -> new DoorInteraction();
-            case "manaposion" -> new ManaPosionInteraction();
-            case "healthposion" -> new HealthPosionInteraction();
-            case "argonaut hero's sword" -> new SwordInteraction();
-            case "leviathan axe" -> new AxeInteraction();
-            case "steve's pick" ->  new PickInteraction();
-            default -> null;
-        };
+    private ObjectInteractionFactory() {}
+
+    public static Optional<IObjectInteraction> getHandler(WorldObject object) {
+        if (object == null) {
+            return Optional.empty();
+        }
+
+        return object.type().flatMap(ObjectInteractionFactory::getHandler);
+    }
+
+    public static Optional<IObjectInteraction> getHandler(WorldObjectType type) {
+        return Optional.ofNullable(type == null ? null : HANDLERS.get(type));
+    }
+
+    private static Map<WorldObjectType, IObjectInteraction> createHandlers() {
+        Map<WorldObjectType, IObjectInteraction> handlers = new EnumMap<>(WorldObjectType.class);
+        handlers.put(WorldObjectType.KEY, new KeyInteraction());
+        handlers.put(WorldObjectType.PORTAL, new PortalInteraction());
+        handlers.put(WorldObjectType.DOOR, new DoorInteraction());
+        handlers.put(WorldObjectType.MANA_POSION, new ManaPosionInteraction());
+        handlers.put(WorldObjectType.HEALTH_POSION, new HealthPosionInteraction());
+        handlers.put(WorldObjectType.SWORD, new SwordInteraction());
+        handlers.put(WorldObjectType.AXE, new AxeInteraction());
+        handlers.put(WorldObjectType.PICK, new PickInteraction());
+        return Collections.unmodifiableMap(handlers);
     }
 }
 

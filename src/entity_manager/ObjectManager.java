@@ -1,5 +1,6 @@
 package entity_manager;
 
+import game_data.ObjectData;
 import object_data.ObjectSpawnPlan;
 import object_data.ObjectDropRequest;
 import object_data.TeleportTarget;
@@ -52,6 +53,48 @@ public class ObjectManager {
 
     public List<WorldObject> getObjects(int mapId) {
         return Collections.unmodifiableList(objectsByMap.getOrDefault(mapId, Collections.emptyList()));
+    }
+
+    public List<ObjectData> snapshotObjects() {
+        List<ObjectData> snapshots = new ArrayList<>();
+        for (List<WorldObject> objects : objectsByMap.values()) {
+            for (WorldObject object : objects) {
+                object.type().ifPresent(type -> snapshots.add(new ObjectData(
+                        type.name(),
+                        object.getWorldX(),
+                        object.getWorldY(),
+                        true,
+                        object.getWorldX(),
+                        object.getWorldY(),
+                        object.getMapIndex()
+                )));
+            }
+        }
+        return Collections.unmodifiableList(snapshots);
+    }
+
+    public void restoreObjects(List<ObjectData> snapshots) {
+        objectsByMap.clear();
+        if (snapshots == null) {
+            return;
+        }
+
+        for (ObjectData saved : snapshots) {
+            if (saved == null || !saved.isActive()) {
+                continue;
+            }
+
+            Optional<WorldObjectType> type = resolveType(saved.getType());
+            if (type.isEmpty()) {
+                continue;
+            }
+
+            WorldObject object = objectFactory.create(type.get(), saved.getMapIndex());
+            if (object instanceof TeleportTarget target) {
+                findTeleportDestination(saved, type.get()).ifPresent(target::setTeleportDestination);
+            }
+            addObject(object, saved.getWorldX(), saved.getWorldY());
+        }
     }
 
     public Optional<WorldObject> objectAt(int mapId, int index) {
@@ -119,5 +162,35 @@ public class ObjectManager {
         int size = objectsOnMap(request.mapIndex()).size();
         DebugLog.info("[DROP] " + request.type() + " spawn at map " + request.mapIndex() +
                 " (" + request.worldX() + ", " + request.worldY() + ")  -> list size = " + size);
+    }
+
+    private Optional<WorldObjectType> resolveType(String savedType) {
+        if (savedType == null) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(WorldObjectType.valueOf(savedType.trim().toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<object_data.TeleportDestination> findTeleportDestination(
+            ObjectData saved,
+            WorldObjectType type
+    ) {
+        int spawnX = saved.hasSpawnIdentity() ? saved.getSpawnX() : saved.getWorldX();
+        int spawnY = saved.hasSpawnIdentity() ? saved.getSpawnY() : saved.getWorldY();
+
+        for (ObjectSpawnPlan plan : spawnPlans) {
+            if (plan.type() == type
+                    && plan.mapId() == saved.getMapIndex()
+                    && plan.worldX() == spawnX
+                    && plan.worldY() == spawnY) {
+                return plan.teleportDestination();
+            }
+        }
+        return Optional.empty();
     }
 }

@@ -1,8 +1,10 @@
 package entity_manager;
 
 import entity.Entity;
+import game_data.ObjectData;
 import main.DebugLog;
 import main.GamePanel;
+import monster_data.Monster;
 import monster_data.MonsterFactory;
 
 import java.util.ArrayList;
@@ -69,6 +71,34 @@ public class MonsterManager {
         return Collections.unmodifiableList(monstersByMap.getOrDefault(mapId, Collections.emptyList()));
     }
 
+    public List<ObjectData> snapshotMonsters() {
+        List<ObjectData> snapshots = new ArrayList<>();
+        for (SpawnSlot slot : spawnSlots) {
+            snapshots.add(snapshotSlot(slot));
+        }
+        return Collections.unmodifiableList(snapshots);
+    }
+
+    public void restoreMonsters(List<ObjectData> snapshots, int fallbackMapId) {
+        if (snapshots == null) {
+            return;
+        }
+
+        List<SpawnSlot> restoredSlots = new ArrayList<>();
+        for (int i = 0; i < snapshots.size(); i++) {
+            ObjectData saved = snapshots.get(i);
+            Optional<SpawnSlot> target = findSlotBySnapshot(saved, fallbackMapId, restoredSlots);
+            if (target.isEmpty()) {
+                target = findSlotByMapIndex(snapshotMapId(saved, fallbackMapId), i, restoredSlots);
+            }
+
+            target.ifPresent(slot -> {
+                restoreSlot(slot, saved);
+                restoredSlots.add(slot);
+            });
+        }
+    }
+
     public Optional<Entity> monsterAt(int mapId, int index) {
         List<Entity> monsters = monstersByMap.get(mapId);
         if (monsters == null || index < 0 || index >= monsters.size()) return Optional.empty();
@@ -77,6 +107,121 @@ public class MonsterManager {
 
     private List<Entity> monstersOnMap(int mapId) {
         return monstersByMap.computeIfAbsent(mapId, k -> new ArrayList<>());
+    }
+
+    private ObjectData snapshotSlot(SpawnSlot slot) {
+        if (slot.current instanceof Monster monster) {
+            return new ObjectData(
+                    monster.getName(),
+                    monster.getWorldX(),
+                    monster.getWorldY(),
+                    !monster.isDead(),
+                    slot.plan.worldX(),
+                    slot.plan.worldY(),
+                    slot.plan.mapId(),
+                    monster.getHP()
+            );
+        }
+
+        return new ObjectData(
+                slot.plan.monsterType().name(),
+                slot.plan.worldX(),
+                slot.plan.worldY(),
+                false,
+                slot.plan.worldX(),
+                slot.plan.worldY(),
+                slot.plan.mapId()
+        );
+    }
+
+    private Optional<SpawnSlot> findSlotBySnapshot(
+            ObjectData saved,
+            int fallbackMapId,
+            List<SpawnSlot> restoredSlots
+    ) {
+        if (saved == null || !saved.hasSpawnIdentity()) {
+            return Optional.empty();
+        }
+
+        int mapId = snapshotMapId(saved, fallbackMapId);
+        for (SpawnSlot slot : spawnSlots) {
+            if (!restoredSlots.contains(slot)
+                    && slot.plan.mapId() == mapId
+                    && slot.plan.worldX() == saved.getSpawnX()
+                    && slot.plan.worldY() == saved.getSpawnY()) {
+                return Optional.of(slot);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<SpawnSlot> findSlotByMapIndex(
+            int mapId,
+            int index,
+            List<SpawnSlot> restoredSlots
+    ) {
+        int sameMapIndex = 0;
+        for (SpawnSlot slot : spawnSlots) {
+            if (restoredSlots.contains(slot) || slot.plan.mapId() != mapId) {
+                continue;
+            }
+
+            if (sameMapIndex == index) {
+                return Optional.of(slot);
+            }
+            sameMapIndex++;
+        }
+        return Optional.empty();
+    }
+
+    private void restoreSlot(SpawnSlot slot, ObjectData saved) {
+        if (saved == null) {
+            return;
+        }
+
+        if (!saved.isActive()) {
+            despawn(slot);
+            slot.lastDeathTime = System.currentTimeMillis();
+            return;
+        }
+
+        Monster monster = ensureMonsterFor(slot, saved);
+        monster.restorePosition(saved.getWorldX(), saved.getWorldY());
+        monster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
+        if (saved.hasHealth()) {
+            monster.restoreHP(saved.getHealth());
+        } else {
+            monster.revive();
+        }
+    }
+
+    private Monster ensureMonsterFor(SpawnSlot slot, ObjectData saved) {
+        if (slot.current instanceof Monster monster) {
+            if (MonsterFactory.matchesSavedName(monster.getName(), saved.getType())) {
+                return monster;
+            }
+            despawn(slot);
+        }
+
+        Monster monster = monsterFactory
+                .createBySavedName(saved.getType(), slot.plan.mapId())
+                .orElseGet(() -> monsterFactory.create(slot.plan.monsterType(), slot.plan.mapId()));
+        monster.spawnAt(slot.plan.worldX(), slot.plan.worldY());
+        monster.rememberHomePosition(slot.plan.worldX(), slot.plan.worldY());
+        monstersOnMap(slot.plan.mapId()).add(monster);
+        slot.current = monster;
+        return monster;
+    }
+
+    private void despawn(SpawnSlot slot) {
+        if (slot.current != null) {
+            monstersOnMap(slot.plan.mapId()).remove(slot.current);
+            slot.current = null;
+        }
+    }
+
+    private int snapshotMapId(ObjectData saved, int fallbackMapId) {
+        return saved != null && saved.hasMapIndex() ? saved.getMapIndex() : fallbackMapId;
     }
 
     public void update(int mapId, int playerX, int playerY) {

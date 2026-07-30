@@ -17,6 +17,7 @@ import monster_data.LootDropPolicy;
 import monster_data.LootDropResult;
 import monster_data.MonsterAttackPlanner;
 import monster_data.MonsterDeathResult;
+import monster_data.MonsterFactory;
 import monster_data.MonsterType;
 import object_data.ObjectDropRequest;
 import object_data.ObjectSpawnPlan;
@@ -55,6 +56,7 @@ public final class EntityCoreSmokeTest {
         collisionContractsUseNamedMissValue();
         objectInteractionFactoryReturnsOptional();
         objectCreationTypesResolveKnownIds();
+        monsterFactoryMatchesSavedNames();
         weaponFactoryResolvesNamesWithoutGamePanel();
         objectSpawnTableKeepsDefaultPlans();
         playerProgressionCalculatesStatsAndLevels();
@@ -257,6 +259,15 @@ public final class EntityCoreSmokeTest {
         assertEquals(30, plan.worldY(), "monster spawn plan keeps y");
     }
 
+    private static void monsterFactoryMatchesSavedNames() {
+        assertTrue(MonsterFactory.matchesSavedName("Green Slime", "green_slime"), "green slime saved identity");
+        assertTrue(MonsterFactory.matchesSavedName("RedSlime", "red slime"), "red slime display identity");
+        assertTrue(MonsterFactory.matchesSavedName("RedSlime", "SLIME"), "generic slime accepts variant");
+        assertTrue(MonsterFactory.matchesSavedName("Skeleton Lord", "boss"), "boss alias identity");
+        assertFalse(MonsterFactory.matchesSavedName("RedSlime", "Green Slime"), "different slime variant");
+        assertFalse(MonsterFactory.matchesSavedName("Bat", "Orc"), "different monster identity");
+    }
+
     private static void weaponFactoryResolvesNamesWithoutGamePanel() {
         assertSame(WeaponType.SWORD, WeaponFactory.resolveType("Argonaut Hero's Sword").orElse(null), "weapon factory sword lookup");
         assertSame(WeaponType.PICK, WeaponFactory.resolveType("Steve Pick").orElse(null), "weapon factory alias lookup");
@@ -379,12 +390,15 @@ public final class EntityCoreSmokeTest {
         SaveRepository repository = new SaveRepository(file);
 
         List<ObjectData> monsters = new ArrayList<>();
-        monsters.add(new ObjectData("Green Slime", 11, 12, true, 100, 200));
+        monsters.add(new ObjectData("Green Slime", 11, 12, true, 100, 200, 5, 7));
+        List<ObjectData> worldObjects = new ArrayList<>();
+        worldObjects.add(new ObjectData("KEY", 30, 40, true, 30, 40, 3));
         GameData saved = new GameData(
                 new PlayerData(1, 2, 3, 4, "Steve's pick", 5, 6, 7, 2),
                 monsters,
                 5,
-                "map5"
+                "map5",
+                worldObjects
         );
 
         repository.save(saved);
@@ -398,9 +412,33 @@ public final class EntityCoreSmokeTest {
         assertEquals(1, loaded.getObjects().size(), "loaded monster count");
         ObjectData monster = loaded.getObjects().get(0);
         assertEquals(11, monster.getWorldX(), "loaded monster x");
+        assertEquals(5, monster.getMapIndex(), "loaded monster map");
         assertEquals(100, monster.getSpawnX(), "loaded monster spawn x");
         assertTrue(monster.hasSpawnIdentity(), "loaded monster spawn identity");
+        assertTrue(monster.hasHealth(), "loaded monster has health snapshot");
+        assertEquals(7, monster.getHealth(), "loaded monster health");
+        assertTrue(loaded.hasWorldObjectSnapshot(), "new save has world object snapshot");
+        assertEquals(1, loaded.getWorldObjects().size(), "loaded world object count");
+        ObjectData key = loaded.getWorldObjects().get(0);
+        assertEquals("KEY", key.getType(), "loaded world object type");
+        assertEquals(3, key.getMapIndex(), "loaded world object map");
 
+        Path oldFile = dir.resolve("old-save.json");
+        Files.writeString(
+                oldFile,
+                "{\"player\":{\"worldX\":1,\"worldY\":2,\"health\":3,\"maxHealth\":4,"
+                        + "\"weaponName\":null,\"mapIndex\":1,\"exp\":0,\"level\":1},"
+                        + "\"objects\":[{\"type\":\"Bat\",\"worldX\":5,\"worldY\":6,"
+                        + "\"spawnX\":7,\"spawnY\":8,\"active\":true}],"
+                        + "\"mapIndex\":1,\"mapPath\":\"map1\"}"
+        );
+        GameData oldLoaded = new SaveRepository(oldFile).load();
+        assertFalse(oldLoaded.hasWorldObjectSnapshot(), "old save lacks world object snapshot");
+        assertFalse(oldLoaded.getObjects().get(0).hasMapIndex(), "old save monster lacks map snapshot");
+        assertFalse(oldLoaded.getObjects().get(0).hasHealth(), "old save monster lacks health snapshot");
+        assertEquals(GameData.CURRENT_VERSION, oldLoaded.getVersion(), "old save version fallback");
+
+        Files.deleteIfExists(oldFile);
         Files.deleteIfExists(file);
         Files.deleteIfExists(dir);
     }

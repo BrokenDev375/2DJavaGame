@@ -1,5 +1,6 @@
 package game_data;
 
+import java.util.Collections;
 import java.util.List;
 
 public class GameData {
@@ -8,6 +9,7 @@ public class GameData {
     private int version = CURRENT_VERSION;
     private PlayerData player;
     private List<ObjectData> objects;
+    private List<ObjectData> worldObjects;
     private int mapIndex;
     private String mapPath;
 
@@ -16,9 +18,20 @@ public class GameData {
     }
 
     public GameData(PlayerData player, List<ObjectData> objects, int mapIndex, String mapPath) {
+        this(player, objects, mapIndex, mapPath, Collections.emptyList());
+    }
+
+    public GameData(
+            PlayerData player,
+            List<ObjectData> objects,
+            int mapIndex,
+            String mapPath,
+            List<ObjectData> worldObjects
+    ) {
         this.version = CURRENT_VERSION;
         this.player = player;
         this.objects = objects;
+        this.worldObjects = worldObjects;
         this.mapIndex = mapIndex;
         this.mapPath = mapPath;
     }
@@ -33,6 +46,14 @@ public class GameData {
 
     public List<ObjectData> getObjects() {
         return objects;
+    }
+
+    public List<ObjectData> getWorldObjects() {
+        return worldObjects == null ? Collections.emptyList() : worldObjects;
+    }
+
+    public boolean hasWorldObjectSnapshot() {
+        return worldObjects != null;
     }
 
     public int getMapIndex() {

@@ -11,7 +11,7 @@ public final class HitResolvePlayer {
 
     public static void resolve(Player player, List<Entity> monsters) {
         if (player == null || player.isDead()) return;
-        int rawDamage = Math.max(1, player.getATK());
+        int rawDamage = player.attackPower();
         int[] knockback = CombatSystem.computePlayerAttackKnockback(player);
 
         for (Entity e : monsters) {

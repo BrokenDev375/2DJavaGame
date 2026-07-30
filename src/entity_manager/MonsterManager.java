@@ -18,7 +18,7 @@ public class MonsterManager {
     private final MonsterFactory monsterFactory;
     private final Map<Integer, List<Entity>> monstersByMap = new HashMap<>();
     private final List<SpawnSlot> spawnSlots = new ArrayList<>();
-    private final boolean useDistanceCheck = false;
+    private final boolean useDistanceCheck = true;
 
     private static class SpawnSlot {
         final MonsterSpawnPlan plan;

@@ -26,12 +26,12 @@ public class SlimeMonster extends Monster {
         // Stats sinh tồn
         configureStats(10, 2, 1);
 
-        this.attackDamage = 2;
+        configureAttackDamage(2);
         this.attackKnockback = 6;
         this.attackTriggerRadius = 28;
         // attackbox and timming
         configureAttackBox(28, 28);
-        configureAttackTiming(6, 6, 10, 98);
+        configureAttackTiming(12, 6, 10, 92);
 
     }
 

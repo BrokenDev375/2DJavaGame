@@ -10,7 +10,7 @@ import player_manager.Player;
 import java.util.Objects;
 
 public abstract class Monster extends Entity {
-    protected int attackDamage = 1;
+    private int attackDamage = 0;
     protected int attackKnockback = 6;
     protected int attackTriggerRadius = 36;
     protected int faceLockThreshold = 4;
@@ -39,6 +39,14 @@ public abstract class Monster extends Entity {
 
     public int getExpReward() {
         return expReward;
+    }
+
+    public int attackPower() {
+        return attackDamage > 0 ? attackDamage : Math.max(1, getATK());
+    }
+
+    protected void configureAttackDamage(int attackDamage) {
+        this.attackDamage = Math.max(0, attackDamage);
     }
 
     protected void configureExpReward(int expReward) {

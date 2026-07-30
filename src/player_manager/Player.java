@@ -48,6 +48,10 @@ public class Player extends Entity {
         return currentWeapon == null ? null : currentWeapon.getName();
     }
 
+    public int attackPower() {
+        return currentWeapon == null ? Math.max(1, getATK()) : currentWeapon.attackPower(this);
+    }
+
     public void beginInteraction() {
         this.interacting = true;
     }
@@ -104,6 +108,7 @@ public class Player extends Entity {
         resizeTo(gp.tileSize(), gp.tileSize());
         placeOnMap(3);
         spawnAt(gp.tileSize() * 15, gp.tileSize() * 22);
+        restoreKeyCount(0);
 
         configureDefaultMovementSpeed(5);
         configureBuffSpeed(4);
@@ -140,6 +145,10 @@ public class Player extends Entity {
 
     public void collectKey() {
         keyCount++;
+    }
+
+    public void restoreKeyCount(int keyCount) {
+        this.keyCount = Math.max(0, keyCount);
     }
 
     public int getKeyCount() {

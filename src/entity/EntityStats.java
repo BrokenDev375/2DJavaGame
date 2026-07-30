@@ -1,5 +1,7 @@
 package entity;
 
+import combat.DamageFormula;
+
 final class EntityStats {
     private int hp = 1;
     private int maxHp = 1;
@@ -60,7 +62,7 @@ final class EntityStats {
     }
 
     int damageAfterDefense(int rawDamage) {
-        return Math.max(1, rawDamage - def);
+        return DamageFormula.afterDefense(rawDamage, def);
     }
 
     boolean isDead() {

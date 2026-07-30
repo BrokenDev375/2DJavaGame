@@ -1,5 +1,6 @@
 package object_data.weapons;
 
+import combat.DamageFormula;
 import entity.Entity;
 import main.GamePanel;
 import object_data.WorldObject;
@@ -34,10 +35,15 @@ public abstract class Weapon extends WorldObject {
         useStaticImage(setup("/object/" + spriteKey(), gp.tileSize(), gp.tileSize()));
     }
 
+    public int attackPower(Player p) {
+        if (p == null) {
+            return Math.max(1, atkFlat());
+        }
+        return Math.max(1, Math.round(p.getATK() * atkMultiplier()) + atkFlat());
+    }
+
     public int computeDamage(Player p, Entity target) {
-        int offensive = Math.round(p.getATK() * atkMultiplier()) + atkFlat();
-        int def = Math.max(0, target.getDEF());
-        float mitig = 100f / (100f + def * 10f);
-        return Math.max(1, Math.round(offensive * mitig));
+        int defense = target == null ? 0 : target.getDEF();
+        return DamageFormula.afterDefense(attackPower(p), defense);
     }
 }

@@ -24,7 +24,8 @@ public final class GameSnapshotMapper {
                 player.equippedWeaponName(),
                 gp.getCurrentMap(),
                 player.getExp(),
-                player.getLevel()
+                player.getLevel(),
+                player.getKeyCount()
         );
 
         int mapIndex = gp.getCurrentMap();

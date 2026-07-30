@@ -1,5 +1,6 @@
 package entity;
 
+import combat.DamageFormula;
 import entity_manager.MonsterSpawnPlan;
 import game_data.GameData;
 import game_data.LoadResult;
@@ -46,6 +47,7 @@ public final class EntityCoreSmokeTest {
         mapPlacementTracksPositionAndMap();
         entitySizeClampsToPositiveValues();
         entityStatsClampHealthAndDamage();
+        damageFormulaUsesRatioMitigation();
         damageStateTracksInvulnerabilityAndAttacker();
         knockbackStateTracksVelocityAndDuration();
         animationFrameAdvancesAndResets();
@@ -182,7 +184,7 @@ public final class EntityCoreSmokeTest {
         assertEquals(5, stats.attack(), "attack");
         assertEquals(2, stats.defense(), "defense");
 
-        assertEquals(3, stats.damageAfterDefense(5), "damage applies defense");
+        assertEquals(4, stats.damageAfterDefense(5), "damage applies ratio defense");
         assertEquals(1, stats.damageAfterDefense(0), "damage minimum");
 
         int oldHp = stats.reduceHp(7);
@@ -197,6 +199,13 @@ public final class EntityCoreSmokeTest {
 
         stats.kill();
         assertTrue(stats.isDead(), "kill marks dead");
+    }
+
+    private static void damageFormulaUsesRatioMitigation() {
+        assertEquals(10, DamageFormula.afterDefense(10, 0), "zero defense keeps raw damage");
+        assertEquals(7, DamageFormula.afterDefense(10, 5), "defense mitigates by ratio");
+        assertEquals(1, DamageFormula.afterDefense(0, 5), "damage floor");
+        assertEquals(5, DamageFormula.afterDefense(5, -4), "negative defense clamps");
     }
 
     private static void collisionAreaUsesDefensiveCopies() {
@@ -372,7 +381,7 @@ public final class EntityCoreSmokeTest {
         List<ObjectData> monsters = new ArrayList<>();
         monsters.add(new ObjectData("Green Slime", 11, 12, true, 100, 200));
         GameData saved = new GameData(
-                new PlayerData(1, 2, 3, 4, "Steve's pick", 5, 6, 7),
+                new PlayerData(1, 2, 3, 4, "Steve's pick", 5, 6, 7, 2),
                 monsters,
                 5,
                 "map5"
@@ -382,8 +391,10 @@ public final class EntityCoreSmokeTest {
         assertTrue(repository.exists(), "save repository writes file");
 
         GameData loaded = repository.load();
+        assertEquals(GameData.CURRENT_VERSION, loaded.getVersion(), "save version");
         assertEquals(1, loaded.getPlayer().getWorldX(), "loaded player x");
         assertEquals(5, loaded.getMapIndex(), "loaded map index");
+        assertEquals(2, loaded.getPlayer().getKeyCount(), "loaded key count");
         assertEquals(1, loaded.getObjects().size(), "loaded monster count");
         ObjectData monster = loaded.getObjects().get(0);
         assertEquals(11, monster.getWorldX(), "loaded monster x");

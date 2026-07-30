@@ -34,11 +34,11 @@ public class BatMonster extends Monster {
 
         configureStats(20, 5, 3);
         configureExpReward(5);
-        attackDamage = 3;
+        configureAttackDamage(3);
         attackKnockback = 6;
 
         configureAttackBox(28, 24);
-        configureAttackTiming(3, 18, 42, 30);
+        configureAttackTiming(10, 14, 32, 36);
 
     }
 

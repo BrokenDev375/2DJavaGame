@@ -44,7 +44,7 @@ public class SkeletonLord extends Monster {
         atkW = gp.tileSize() * 2;
         atkH = gp.tileSize() * 2;
         configureAttackBox(atkW, atkH);
-        configureAttackTiming(3, 18, 39, 30);
+        configureAttackTiming(12, 14, 32, 42);
 
         attackTriggerRadius = Math.max(gp.tileSize() * 6, 48);
         faceLockThreshold = 6;
@@ -154,7 +154,7 @@ public class SkeletonLord extends Monster {
             atkW = gp.tileSize() * 3;
             atkH = gp.tileSize() * 2;
             configureAttackBox(atkW, atkH);
-            configureAttackTiming(6, 8, 10, 36);
+            configureAttackTiming(10, 10, 18, 42);
             switchToPhase2Sprites();
         }
     }

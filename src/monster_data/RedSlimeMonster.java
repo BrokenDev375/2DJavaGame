@@ -26,7 +26,7 @@ public class RedSlimeMonster extends Monster {
         defineSolidArea(new Rectangle(10, 18, getWidth() - 20, getHeight() - 22));
 
         configureStats(12, 3, 1);
-        attackDamage = 4;
+        configureAttackDamage(4);
         attackKnockback = 5;
 
         configureAttackBox(30, 26);

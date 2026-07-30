@@ -32,6 +32,7 @@ public final class GameRestorer {
         player.restorePosition(savedPlayer.getWorldX(), savedPlayer.getWorldY());
         player.restoreProgression(savedPlayer.getLevel(), savedPlayer.getExp());
         player.restoreHealthStats(savedPlayer.getMaxHealth(), savedPlayer.getHealth());
+        player.restoreKeyCount(savedPlayer.getKeyCount());
 
         if (savedPlayer.getWeaponName() != null) {
             gp.getWeaponFactory()

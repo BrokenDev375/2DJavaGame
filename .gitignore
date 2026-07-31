@@ -1,7 +1,17 @@
-GameProject.iml
-build/
+# Local planning/agent files
 plan.md
 .agents/
 skills-lock.json
-ad
-how --oneline ORIG_HEAD
+
+# IDE files
+.idea/
+*.iml
+nbproject/private/
+
+# Build outputs
+build/
+out/
+dist/
+
+# Runtime save data
+saves/*.json

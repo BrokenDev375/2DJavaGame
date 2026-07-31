@@ -1,114 +1,116 @@
 # 2D Java Game
 
-2D Java Game là một game action-RPG 2D được xây dựng bằng Java Swing cho đồ án môn Lập trình hướng đối tượng. Phiên bản gốc được thực hiện theo nhóm 3 người. Sau đó, mình tiếp tục phát triển một mình trên nhánh/fork này để refactor code theo hướng OOP sạch hơn, tách trách nhiệm rõ hơn và bổ sung thêm các hệ thống gameplay.
+2D Java Game is a 2D action RPG built with Java Swing for an Object-Oriented Programming course project. The original version was created by a team of three students. This branch/fork continues the project as a solo refactor focused on cleaner OOP design, clearer responsibility boundaries, and expanded RPG gameplay systems.
 
-## Mục Tiêu Dự Án
+## Project Goals
 
-- Áp dụng các nguyên lý OOP vào một game 2D có nhiều hệ thống tương tác.
-- Tách dần các lớp lớn thành các module nhỏ hơn, dễ đọc và dễ kiểm thử.
-- Xây dựng gameplay loop kiểu RPG: khám phá, chiến đấu, nhận thưởng, lên cấp, đổi vũ khí và lưu tiến trình.
-- Giữ project chạy được bằng Java thuần, không phụ thuộc game engine ngoài.
+- Apply object-oriented design principles to a playable 2D game with multiple interacting systems.
+- Gradually split large classes into smaller, easier-to-read and easier-to-test modules.
+- Build an RPG-style gameplay loop: exploration, combat, rewards, leveling, weapon switching, and progress saving.
+- Keep the project running with plain Java, without relying on an external game engine.
 
-## Tính Năng Chính
+## Key Features
 
-- Bản đồ tile/chunk load động.
-- Player di chuyển 4 hướng, va chạm với tile, object, NPC và monster.
-- Combat realtime với windup, active, recover, cooldown, knockback và invulnerability frame.
-- Monster AI gồm wander, chase và aggro switch.
-- Nhiều loại monster: Slime, Red Slime, Bat, Orc, Skeleton Lord.
-- Boss có phase enraged khi HP xuống thấp.
-- Hệ thống level/EXP và chỉ số HP/ATK/DEF.
-- Vũ khí có timing, hitbox và damage multiplier riêng.
-- Loot drop, potion, key, portal, door và weapon pickup.
-- Dialogue với NPC.
-- UI cho main menu, pause, game over, HP, monster HP, EXP và message.
-- Save/load JSON bằng Gson.
-- Smoke test Java thuần cho các core contract quan trọng.
+- Dynamic tile/chunk-based map loading.
+- Four-direction player movement with collision against tiles, objects, NPCs, and monsters.
+- Realtime combat with windup, active, recover, cooldown, knockback, and invulnerability frames.
+- Monster AI with wander, chase, and aggro-switch behaviors.
+- Multiple monster types: Slime, Red Slime, Bat, Orc, and Skeleton Lord.
+- Boss behavior with an enraged phase at low HP.
+- Level, EXP, HP, ATK, and DEF progression.
+- Weapons with individual timing, hitboxes, and damage multipliers.
+- Loot drops, potions, keys, portals, doors, and weapon pickups.
+- NPC dialogue.
+- UI for main menu, pause menu, game over, HP, monster HP, EXP, and messages.
+- JSON save/load using Gson.
+- Plain Java smoke tests for important core contracts.
 
-## Điều Khiển
+## Controls
 
-| Phím | Chức năng |
+| Key | Action |
 | --- | --- |
-| `W A S D` | Di chuyển |
-| `J` | Tấn công |
-| `E` | Nói chuyện / chuyển dialogue |
-| `F` | Nhặt item / tương tác object |
-| `F5` | Lưu game |
-| `ESC` | Mở pause menu |
-| `Enter` | Chọn trong menu |
-| `Arrow Up/Down/Left/Right` | Điều hướng menu |
+| `W A S D` | Move |
+| `J` | Attack |
+| `E` | Talk / advance dialogue |
+| `F` | Pick up item / interact with object |
+| `F5` | Save game |
+| `ESC` | Open pause menu |
+| `Enter` | Select menu option |
+| `Arrow Up/Down/Left/Right` | Navigate menu |
 
 ## Save / Load
 
-File save mặc định nằm tại:
+The default save file is located at:
 
 ```text
 saves/savegame.json
 ```
 
-Save hiện lưu:
+The save system currently stores:
 
-- vị trí player;
-- map hiện tại;
-- HP / max HP;
-- level / EXP;
-- vũ khí đang trang bị;
-- số key đã nhặt;
-- trạng thái object còn tồn tại trong world;
-- trạng thái monster theo spawn slot, bao gồm monster đã chết hoặc còn sống.
+- player position;
+- current map;
+- HP and max HP;
+- level and EXP;
+- equipped weapon;
+- collected key count;
+- remaining world objects;
+- monster state by spawn slot, including whether each monster is alive or dead.
 
-Load Game có thể dùng từ main menu. Nếu file save bị hỏng JSON, hãy xóa `saves/savegame.json` rồi save lại từ trong game.
+Load Game is available from the main menu. If the save file becomes corrupted, delete `saves/savegame.json` and create a new save from inside the game.
 
-## Cấu Trúc Dự Án
+## Project Structure
 
 ```text
 src/
-  ai/movement/          AI movement strategy: wander, chase, aggro switch
-  combat/               Attack phase, hit resolution, damage formula
-  entity/               Entity core: placement, size, stats, sprite, combat state
-  entity_manager/       Quản lý player, monster, NPC, object spawn/restore
-  game_data/            Save/load DTO, mapper, repository, restorer
-  input_manager/        Keyboard input và command theo game state
-  interact_manager/     Tương tác NPC/object/item/weapon/portal/door
-  main/                 GamePanel, game loop, renderer, config, entry point
-  monster_data/         Monster, factory, loot, death result, từng loại quái
-  npc_data/             NPC và dialogue contract
-  object_data/          WorldObject, item, weapon, portal, door, spawn plan
-  player_manager/       Player, movement, combat input, progression
-  sound_manager/        Music và sound effect
-  tile/                 Chunk/tile loading và map query
-  ui/                   HUD, menu, pause, dialogue, message, health bar
+  ai/movement/          AI movement strategies: wander, chase, aggro switch
+  combat/               Attack phases, hit resolution, damage formula
+  entity/               Entity core: placement, size, stats, sprites, combat state
+  entity_manager/       Player, monster, NPC, and object spawn/restore management
+  game_data/            Save/load DTOs, mapper, repository, and restorer
+  input_manager/        Keyboard input and game-state commands
+  interact_manager/     NPC/object/item/weapon/portal/door interactions
+  main/                 GamePanel, game loop, renderer, config, and entry point
+  monster_data/         Monster classes, factory, loot, death result, monster types
+  npc_data/             NPCs and dialogue contracts
+  object_data/          World objects, items, weapons, portals, doors, spawn plans
+  player_manager/       Player, movement, combat input, and progression
+  sound_manager/        Music and sound effects
+  tile/                 Chunk/tile loading and map queries
+  ui/                   HUD, menus, pause overlay, dialogue, messages, health bars
 
-resource/               Ảnh, map, âm thanh và asset runtime
-libraries/              Thư viện ngoài, hiện có Gson
-test/                   Smoke test Java thuần
-scripts/                Script compile/test nhanh
-docs/                   Checklist test thủ công
+resource/               Runtime images, maps, sounds, and other assets
+libraries/              External libraries, currently Gson
+test/                   Plain Java smoke tests
+scripts/                Quick compile/test scripts
+docs/                   Manual testing checklist
 ```
 
-## Yêu Cầu Môi Trường
+## Requirements
 
-- JDK 24 theo cấu hình NetBeans hiện tại trong `nbproject/project.properties`.
+- JDK 24, based on the current NetBeans project configuration in `nbproject/project.properties`.
 - Gson `libraries/gson-2.10.1.jar`.
-- NetBeans hoặc IntelliJ IDEA đều chạy được nếu classpath có Gson và resource folder.
+- NetBeans or IntelliJ IDEA. Either IDE can run the project as long as Gson and the resource folder are on the classpath.
 
-## Cách Chạy Bằng NetBeans
+## Run With NetBeans
 
-1. Mở NetBeans.
-2. Chọn `File -> Open Project`.
-3. Chọn thư mục project này.
-4. Kiểm tra thư viện Gson:
-   - chuột phải project;
-   - chọn `Properties`;
-   - vào `Libraries`;
-   - thêm `libraries/gson-2.10.1.jar` nếu IDE chưa nhận.
-5. Run project. Main class là:
+1. Open NetBeans.
+2. Select `File -> Open Project`.
+3. Choose this project folder.
+4. Check the Gson library:
+   - right-click the project;
+   - select `Properties`;
+   - open `Libraries`;
+   - add `libraries/gson-2.10.1.jar` if the IDE has not detected it.
+5. Run the project.
+
+Main class:
 
 ```text
 main.Main
 ```
 
-## Cách Chạy Bằng PowerShell
+## Run With PowerShell
 
 Compile:
 
@@ -125,55 +127,55 @@ Run:
 java -cp "out\classes;libraries\gson-2.10.1.jar;resource" main.Main
 ```
 
-## Build Bằng Ant
+## Build With Ant
 
-Project có cấu hình NetBeans/Ant:
+This project includes NetBeans/Ant configuration:
 
 ```powershell
 ant clean jar
 ```
 
-Sau khi build, JAR nằm ở:
+After building, the JAR is generated at:
 
 ```text
 dist/2DJavaGame.jar
 ```
 
-## Chạy Smoke Test
+## Run Smoke Tests
 
-Smoke test compile toàn bộ `src` và `test`, sau đó chạy các test Java thuần:
+The smoke test script compiles both `src` and `test`, then runs the plain Java smoke tests:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1
 ```
 
-Các test hiện kiểm tra những phần như:
+Current smoke tests cover:
 
-- config kích thước game;
-- direction, collision geometry;
-- entity stats, damage formula, knockback, invulnerability;
-- object/monster type lookup;
+- game size configuration;
+- direction and collision geometry;
+- entity stats, damage formula, knockback, and invulnerability;
+- object and monster type lookup;
 - weapon factory lookup;
 - player progression;
 - loot drop policy;
-- save repository và save manager;
-- asset loader missing asset contract.
+- save repository and save manager;
+- missing-asset contract in the asset loader.
 
-## Ghi Chú Refactor
+## Refactor Notes
 
-Nhánh này đã được refactor lại nhiều phần so với bản đồ án ban đầu:
+This branch has been heavily refactored compared with the original course-project version:
 
-- giảm public mutable field;
-- tách `GamePanel` dần về vai trò composition root;
-- tách combat, movement, rendering, save/load, object interaction thành các class nhỏ hơn;
-- dùng interface/boundary nhỏ hơn cho world query, collision và render context;
-- thêm smoke test để giữ behavior ổn định khi refactor tiếp;
-- điều chỉnh gameplay RPG: weapon damage, damage mitigation, monster timing, safe respawn và save progress.
+- reduced public mutable fields;
+- moved `GamePanel` closer to a composition-root role;
+- separated combat, movement, rendering, save/load, and object interaction into smaller classes;
+- introduced small interfaces/boundaries for world queries, collision, and rendering context;
+- added smoke tests to keep behavior stable during future refactors;
+- adjusted RPG gameplay balance, including weapon damage, damage mitigation, monster timing, safer respawn behavior, and saved progress.
 
-## Hướng Phát Triển Tiếp
+## Future Improvements
 
-- Tách inventory/equipment đầy đủ thay cho `currentWeapon` và `keyCount`.
-- Thêm quest state machine và quest log.
-- Đưa monster/weapon/drop/spawn config sang data file để balance nhanh hơn.
-- Thêm UI character sheet/inventory.
-- Mở rộng save/load cho quest progress và world flags nâng cao.
+- Add a full inventory/equipment system instead of relying mainly on `currentWeapon` and `keyCount`.
+- Add a quest state machine and quest log.
+- Move monster, weapon, drop, and spawn configuration into data files for easier balancing.
+- Add character sheet and inventory UI.
+- Expand save/load support for quest progress and advanced world flags.

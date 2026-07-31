@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="2DJavaGame">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/dist/2DJavaGame.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
